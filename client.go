@@ -1,0 +1,397 @@
+package dygo
+
+import (
+	"context"
+	"errors"
+	"log"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/smithy-go/logging"
+)
+
+type Option func(*Client) error
+
+type Client struct {
+	client       *dynamodb.Client
+	region       string
+	tableName    string
+	partitionKey string
+	sortKey      string
+	gsis         []GSI
+	endpoint     string
+	maxRetry     int
+	logger       *log.Logger
+}
+
+type GSI struct {
+	indexName    string
+	partitionKey string
+	sortKey      string
+}
+
+// WithTableName is a mandatory option function that sets the table name for the client.
+// It takes a tableName string as a parameter and returns an error.
+func WithTableName(tableName string) Option {
+	return func(c *Client) error {
+		c.tableName = tableName
+		return nil
+	}
+}
+
+// WithPartitionKey is a mandatory option function that sets the partition key for the client.
+// It takes a string parameter 'key' and returns an error.
+func WithPartitionKey(key string) Option {
+	return func(c *Client) error {
+		c.partitionKey = key
+		return nil
+	}
+}
+
+// WithSortKey is an optional option function that sets the sort key for the client.
+// Example usage:
+//
+//	client := NewClient(WithSortKey("sk"))
+//	// This sets the sort key to "sk" for the client.
+func WithSortKey(key string) Option {
+	return func(c *Client) error {
+		c.sortKey = key
+		return nil
+	}
+}
+
+// WithGSI is an optional option function that adds a Global Secondary Index (GSI) to the client.
+// It takes the index name, partition key, and sort key as parameters.
+// If a GSI with the same index name already exists, it returns an error.
+// Otherwise, it adds the GSI to the client and returns nil.
+func WithGSI(indexName, partitionKey, sortKey string) Option {
+	return func(c *Client) error {
+		for _, v := range c.gsis {
+			if v.indexName == indexName {
+				return errors.New("duplicate gsi index name")
+			}
+		}
+		c.gsis = append(c.gsis, GSI{indexName, partitionKey, sortKey})
+		return nil
+	}
+}
+
+// WithRegion is a mandatory option function that sets the region for the client.
+// It takes a string parameter representing the region and returns an error.
+// The region is used to configure the client for a specific geographic region.
+func WithRegion(region string) Option {
+	return func(c *Client) error {
+		c.region = region
+		return nil
+	}
+}
+
+// WithLogger is an optional option function that sets the logger for the client.
+// It takes a *log.Logger as a parameter and returns an error.
+// The logger will be used to log client operations and errors.
+func WithLogger(l *log.Logger) Option {
+	return func(c *Client) error {
+		c.logger = l
+		return nil
+	}
+}
+
+// WithEndpoint is an optional option function that sets the endpoint for the client.
+// It takes an endpoint string as a parameter and returns an error.
+func WithEndpoint(endpoint string) Option {
+	return func(c *Client) error {
+		c.endpoint = endpoint
+		return nil
+	}
+}
+
+// WithRetry is an optional option function that sets the maximum number of retries for a client.
+// It takes an integer count as a parameter and returns an error.
+// The count parameter specifies the maximum number of retries allowed.
+// If the count is not provided, it defaults to 5.
+func WithRetry(count int) Option {
+	return func(c *Client) error {
+		c.maxRetry = count
+		return nil
+	}
+}
+
+// Define a custom logger that satisfies the log.Logger interface.
+type CustomLogger struct {
+	logger *log.Logger
+}
+
+// TODO: fix me
+func (l CustomLogger) Logf(classification logging.Classification, format string, v ...any) {
+	// Here you can format the log message as you like and
+	// write it to the underlying logger.
+	l.logger.Printf("%v:%v", classification, v)
+}
+
+// loadDBConfigOptions returns a slice of functions that configure the options for loading the database configuration.
+// The returned functions can be used with the `config.LoadOptions` struct to customize the configuration options.
+// The `c` parameter is the client used to interact with the database.
+func loadDBConfigOptions(c Client) []func(*config.LoadOptions) error {
+	var options []func(*config.LoadOptions) error
+	options = append(options, config.WithRegion(c.region))
+
+	if c.logger != nil {
+		customLogger := CustomLogger{logger: c.logger}
+		options = append(options, config.WithLogger(customLogger))
+		options = append(options, config.WithClientLogMode(aws.LogRetries|aws.LogRequest))
+	}
+
+	count := c.maxRetry
+	if c.maxRetry <= 0 {
+		count = 5
+	}
+	options = append(options, config.WithRetryer(func() aws.Retryer {
+		return retry.AddWithMaxAttempts(retry.NewStandard(), count)
+	}))
+	if c.endpoint != "" {
+		options = append(options, config.WithEndpointResolverWithOptions(aws.EndpointResolverWithOptionsFunc(
+			func(service, region string, options ...any) (aws.Endpoint, error) {
+				if service == dynamodb.ServiceID {
+					return aws.Endpoint{
+						URL:           c.endpoint,
+						SigningRegion: c.region,
+					}, nil
+				}
+				return aws.Endpoint{}, &aws.EndpointNotFoundError{}
+			},
+		)))
+	}
+	return options
+}
+
+// NewClient creates a new instance of the Client struct with the provided options.
+// It initializes the DynamoDB client using provided configuration.
+// Returns the created Client instance or an error if any.
+func NewClient(opts ...Option) (*Client, error) {
+	c := &Client{}
+	for _, opt := range opts {
+		if err := opt(c); err != nil {
+			return nil, err
+		}
+	}
+	options := loadDBConfigOptions(*c)
+	cfg, err := config.LoadDefaultConfig(context.TODO(), options...)
+	if err != nil {
+		return nil, err
+	}
+	c.client = dynamodb.NewFromConfig(cfg)
+	e := c.validate()
+	if e != nil {
+		return nil, e
+	}
+	return c, nil
+}
+
+// validate checks if the required fields of the Client struct are set.
+// If any required field is missing, it returns an Error with the corresponding error message.
+// If all required fields are set, it returns nil.
+func (c *Client) validate() *Error {
+	var msg string
+	switch {
+	case c.tableName == "":
+		msg = ErrMissingTableName
+	case c.partitionKey == "":
+		msg = ErrMissingPartitionKey
+	case c.region == "":
+		msg = ErrMissingRegion
+	case c.client == nil:
+		msg = ErrMissingClient
+	}
+	if msg != "" {
+		return DynamoError().Method("NewClient").Message(msg)
+	}
+	return nil
+}
+
+// Table sets the name of the table for the query.
+// It returns the modified Client instance.
+func (c *Client) Table(value string) *Client {
+	c.tableName = value
+	return c
+}
+
+// PK returns an Item with the specified value as the partition key.
+func (c *Client) PK(value any) *Item {
+	return c.partition(c.partitionKey, value)
+}
+
+// GSI sets Global Secondary Index (GSI) for quiry.
+// It takes the indexName string, partitionKeyValue any, and f SortKeyFunc as parameters.
+// The indexName specifies the name of the GSI.
+// The partitionKeyValue specifies the value of the partition key for the GSI query.
+// The f SortKeyFunc is a function that defines the sort key for the GSI query.
+// It returns an Item object that can be used to perform operations on the GSI.
+// Example usage:
+//
+//	 err = db.
+//		GSI("gsi-name", "room", dygo.Equal("current")).
+//		Query(context.Background()).
+//		Unmarshal(&data, []string{"room"}).
+//		Run()
+func (c *Client) GSI(indexName string, partitionKeyValue any, f SortKeyFunc) *Item {
+	return c.secondaryIndex(indexName, partitionKeyValue, f)
+}
+
+// SK applies the provided sort key value along with SortKeyFunc.
+// The SortKeyFunc is used to determine the sorting order of the Item.
+// Possible values for SortKeyFunc are Equal, BeginsWith, Between, LessThan, LessThanEqual, GreaterThan, GreaterThanEqual.
+// Example usage:
+//
+//	 err = db.
+//		PK("pk").
+//		SK(dygo.Equal("sk")).
+//		GetItem(context.Background(), &data)
+func (i *Item) SK(f SortKeyFunc) *Item {
+	return i.sort(i.c.sortKey, f)
+}
+
+// Item returns a new instance of the Item struct, initialized with the provided item and client.
+// item must implement method : Validate() error
+// for example:
+// If passing employee struct, it should implement Validate() error
+//
+//	 func (e employee) Validate() error {
+//		return nil
+//	 }
+//	 emp := employee{}
+//		err = db.
+//			PK("pk").
+//			SK(dygo.Equal("sk")).
+//			GetItem(context.Background(), &emp)
+func (c *Client) Item(item item) *Item {
+	return &Item{
+		c:    c,
+		item: item,
+	}
+}
+
+// Project sets the projection for the item.
+// It takes a variadic parameter `value` which represents the projection fields.
+//
+// Example usage:
+//
+//	 err = db.
+//		PK("pk").
+//		SK(dygo.Equal("sk")).
+//		Project("_partition_key", "_entity_type", "_sort_key").
+//		GetItem(context.Background(), &data)
+func (i *Item) Project(value ...string) *Item {
+	return i.setProjection(value)
+}
+
+// Filter applies a filter function to the specified attribute of the item.
+// Possible values for FilterFunc are KeyEqual, KeyNotEqual, KeyBeginsWith, KeyBetween, KeyLessThan, KeyLessThanEqual, KeyGreaterThan, KeyGreaterThanEqual, KeyContains, KeyNotNull, KeyNull, KeyIn.
+//
+// Example usage:
+//
+//	 err = db.
+//		PK("pk").
+//		SK(dygo.Equal("sk")).
+//		Filter("physical_name", dygo.KeyBeginsWith("name_test_")).
+//		GetItem(context.Background(), &data)
+func (i *Item) Filter(attributeName string, filterFunc FilterFunc) *Item {
+	return i.buildFilter(attributeName, filterFunc)
+}
+
+// AndFilter applies an additional logical AND filter to the existing filter using the specified attribute name and filter function.
+// It should be used after the Filter function.
+//
+// Example usage:
+//
+//	 err = db.
+//		PK("pk").
+//		SK(dygo.Equal("sk")).
+//		Filter("physical_name", dygo.KeyBeginsWith("name_test_")).
+//		AndFilter("logical_name", dygo.KeyBeginsWith("name_test_")).
+//		GetItem(context.Background(), &data)
+func (i *Item) AndFilter(attributeName string, filterFunc FilterFunc) *Item {
+	return i.buildAndFilter(attributeName, filterFunc)
+}
+
+// OrFilter method is used to chain multiple filters together using the OR operator.
+// It should be used after the Filter function.
+//
+// Example usage:
+//
+//	 err = db.
+//		PK("pk").
+//		SK(dygo.Equal("sk")).
+//		Filter("physical_name", dygo.KeyBeginsWith("name_test_")).
+//		OrFilter("logical_name", dygo.KeyBeginsWith("name_test_")).
+//		GetItem(context.Background(), &data)
+func (i *Item) OrFilter(attributeName string, filterFunc FilterFunc) *Item {
+	return i.buildOrFilter(attributeName, filterFunc)
+}
+
+// AddBatchGetItem adds a new item to the batch get item request.
+// If omitEmptyKeys is true empty keys will not be added to BatchGetItem.
+// If omitEmptyKeys is false empty keys also be added to BatchGetItem.
+//
+// Example usage:
+//
+//	 item := new(Item)
+//	 for _, gId := range gIds {
+//		 db.PK(gId).SK(Equal(SK)).AddBatchGetItem(item, true)
+//	 }
+//	 output, err := item.BatchGetItem(context.Background(), 10)
+func (i *Item) AddBatchGetItem(newItem *Item, omitEmptyKeys bool) {
+	if omitEmptyKeys && i.err != nil {
+		return
+	}
+	i.fillItem(newItem)
+	newItem.addBatchGetItem()
+}
+
+// AddBatchDeleteItem adds a new item to the batch delete list.
+// Example usage:
+//
+//	 item := new(Item)
+//	 for _, gId := range gIds {
+//		 db.PK(gId).SK(Equal(SK)).AddBatchDeleteItem(item)
+//	 }
+//	 err = item.BatchDeleteItem(context.Background(), 10)
+func (i *Item) AddBatchDeleteItem(newItem *Item) {
+	i.fillItem(newItem)
+	newItem.addBatchDeleteItem()
+}
+
+// AddBatchUpsertItem adds a new item to the batch upsert operation.
+// Example usage:
+//
+//	 item := new(Item)
+//	 for _, gId := range gIds {
+//		 db.PK(gId).SK(Equal(SK)).AddBatchUpsertItem(item)
+//	 }
+//	 err = item.BatchUpsertItem(context.Background(), 10)
+func (i *Item) AddBatchUpsertItem(newItem *Item) {
+	err := i.item.Validate()
+	if err != nil {
+		newItem.err = DynamoError().Method("opValidate").Message(err.Error())
+		return
+	}
+	i.fillItem(newItem)
+	newItem.addBatchUpsertItem()
+}
+
+// fillItem fills the fields of the given newItem with the values from the current Item.
+func (i *Item) fillItem(newItem *Item) {
+	newItem.c = i.c
+	newItem.key = i.key
+	newItem.keyCondition = i.keyCondition
+	newItem.filter = i.filter
+	newItem.projection = i.projection
+	newItem.item = i.item
+	newItem.useGSI = i.useGSI
+	newItem.pagination = i.pagination
+	newItem.indexName = i.indexName
+	if newItem.err == nil {
+		newItem.err = i.err
+	}
+}

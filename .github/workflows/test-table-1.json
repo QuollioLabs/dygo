@@ -1,0 +1,46 @@
+{
+	"TableName": "test-table-1",
+	"KeySchema": [
+		{
+			"AttributeName": "_partition_key",
+			"KeyType": "HASH"
+		},
+		{
+			"AttributeName": "_sort_key",
+			"KeyType": "RANGE"
+		}
+	],
+	"AttributeDefinitions": [
+		{
+			"AttributeName": "_partition_key",
+			"AttributeType": "S"
+		},
+		{
+			"AttributeName": "_sort_key",
+			"AttributeType": "S"
+		},
+		{
+			"AttributeName": "_entity_type",
+			"AttributeType": "S"
+		}
+	],
+	"BillingMode": "PAY_PER_REQUEST",
+	"GlobalSecondaryIndexes": [
+		{
+			"IndexName": "gsi-name",
+			"KeySchema": [
+				{
+					"AttributeName": "_entity_type",
+					"KeyType": "HASH"
+				},
+				{
+					"AttributeName": "_sort_key",
+					"KeyType": "RANGE"
+				}
+			],
+			"Projection": {
+				"ProjectionType": "ALL"
+			}
+		}
+	]
+}
