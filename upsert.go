@@ -20,12 +20,12 @@ func (i *Item) Upsert(ctx context.Context) error {
 
 	err := i.item.Validate()
 	if err != nil {
-		return DynamoError().Method(opUpsert).Message(err.Error())
+		return dynamoError().method(opUpsert).message(err.Error())
 	}
 
-	av, err := MarshalMapUsingJSONTags(i.item)
+	av, err := marshalMapUsingJSONTags(i.item)
 	if err != nil {
-		return DynamoError().Method(opUpsert).Message(err.Error())
+		return dynamoError().method(opUpsert).message(err.Error())
 	}
 
 	input := dynamodb.PutItemInput{
@@ -34,10 +34,10 @@ func (i *Item) Upsert(ctx context.Context) error {
 	}
 
 	if _, err := i.c.client.PutItem(context.TODO(), &input); err != nil {
-		if err := GetDynamoDBError(opUpsert, err); err != nil {
+		if err := getDynamoDBError(opUpsert, err); err != nil {
 			return err
 		}
-		return DynamoError().Method(opUpsert).Message(err.Error())
+		return dynamoError().method(opUpsert).message(err.Error())
 	}
 	return nil
 }

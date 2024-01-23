@@ -7,7 +7,7 @@ import (
 )
 
 func Test_batchdelete_item_happy_path(t *testing.T) {
-	db, err := GetClient()
+	db, err := getClient()
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}

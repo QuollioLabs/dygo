@@ -8,7 +8,7 @@ import (
 
 func Test_query_item(t *testing.T) {
 
-	db, err := GetClient()
+	db, err := getClient()
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
@@ -45,7 +45,7 @@ func Test_query_item(t *testing.T) {
 }
 
 func Test_query_with_gsi(t *testing.T) {
-	db, err := GetClient()
+	db, err := getClient()
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}

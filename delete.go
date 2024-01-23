@@ -19,7 +19,7 @@ func (i *Item) Delete(ctx context.Context) error {
 
 	expr, err := i.deleteItemExpression()
 	if err != nil {
-		return DynamoError().Method(opDelete).Message(err.Error())
+		return dynamoError().method(opDelete).message(err.Error())
 	}
 
 	input := dynamodb.DeleteItemInput{
@@ -30,10 +30,10 @@ func (i *Item) Delete(ctx context.Context) error {
 		ConditionExpression:       expr.Condition(),
 	}
 	if _, err := i.c.client.DeleteItem(context.TODO(), &input); err != nil {
-		if err := GetDynamoDBError(opDelete, err); err != nil {
+		if err := getDynamoDBError(opDelete, err); err != nil {
 			return err
 		}
-		return DynamoError().Method(opDelete).Message(err.Error())
+		return dynamoError().method(opDelete).message(err.Error())
 	}
 	return nil
 }

@@ -28,19 +28,19 @@ const opCreate = "Create"
 //
 // Important : dataItem must implement Validate() method.
 func (i *Item) Create(ctx context.Context) error {
-	av, err := MarshalMapUsingJSONTags(i.item)
+	av, err := marshalMapUsingJSONTags(i.item)
 	if err != nil {
-		return DynamoError().Method(opCreate).Message(err.Error())
+		return dynamoError().method(opCreate).message(err.Error())
 	}
 
 	err = i.item.Validate()
 	if err != nil {
-		return DynamoError().Method(opCreate).Message(err.Error())
+		return dynamoError().method(opCreate).message(err.Error())
 	}
 
 	expr, err := i.createItemExpression()
 	if err != nil {
-		return DynamoError().Method(opCreate).Message(err.Error())
+		return dynamoError().method(opCreate).message(err.Error())
 	}
 	input := dynamodb.PutItemInput{
 		Item:                      av,
@@ -51,10 +51,10 @@ func (i *Item) Create(ctx context.Context) error {
 	}
 
 	if _, err := i.c.client.PutItem(context.TODO(), &input); err != nil {
-		if err := GetDynamoDBError(opCreate, err); err != nil {
+		if err := getDynamoDBError(opCreate, err); err != nil {
 			return err
 		}
-		return DynamoError().Method(opCreate).Message(err.Error())
+		return dynamoError().method(opCreate).message(err.Error())
 	}
 	return nil
 }

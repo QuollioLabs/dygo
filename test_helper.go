@@ -108,7 +108,7 @@ func (d *dataItem) isValidSK() ozzo.RuleFunc {
 	}
 }
 
-func GetClient() (*Client, error) {
+func getClient() (*Client, error) {
 	dbEndpoint := "http://localhost:8000"
 	db, err := NewClient(
 		WithTableName("test-table-1"),

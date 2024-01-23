@@ -18,11 +18,11 @@ const opBatchGet = "BatchGet"
 // Example:
 //
 //	item := new(Item)
-//		for _, gId := range gIds {
-//			db.PK(gId).SK(Equal(SK)).AddBatchGetItem(item, true)
-//		}
+//	for _, gId := range gIds {
+//		db.PK(gId).SK(Equal(SK)).AddBatchGetItem(item, true)
+//	}
 //
-//		output, err := item.BatchGetItem(context.Background(), 10)
+//	output, err := item.BatchGetItem(context.Background(), 10)
 func (i *Item) BatchGetItem(ctx context.Context, threadCount int) ([]map[string]types.AttributeValue, error) {
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(threadCount)
@@ -38,7 +38,7 @@ func (i *Item) BatchGetItem(ctx context.Context, threadCount int) ([]map[string]
 	}
 
 	if err := g.Wait(); err != nil {
-		return nil, DynamoError().Method(opBatchGet).Message(err.Error())
+		return nil, dynamoError().method(opBatchGet).message(err.Error())
 	}
 
 	return output, nil
@@ -65,8 +65,8 @@ func (i *Item) BatchGetItem(ctx context.Context, threadCount int) ([]map[string]
 //	err = item.BatchGetAuthorizedItem(context.Background(), 10).
 //		Unmarshal(&data, []string{"room"}).
 //		Run()
-func (i *Item) BatchGetAuthorizedItem(ctx context.Context, threadCount int) *Output {
-	result := NewOutput(i, ctx)
+func (i *Item) BatchGetAuthorizedItem(ctx context.Context, threadCount int) *output {
+	result := newOutput(i, ctx)
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(threadCount)
 
@@ -81,7 +81,7 @@ func (i *Item) BatchGetAuthorizedItem(ctx context.Context, threadCount int) *Out
 	}
 
 	if err := g.Wait(); err != nil {
-		result.item.err = DynamoError().Method(opBatchGet).Message(err.Error())
+		result.item.err = dynamoError().method(opBatchGet).message(err.Error())
 	}
 	result.Results = append(result.Results, output...)
 	return result
@@ -98,7 +98,7 @@ func (i *Item) fetchBatch(ctx context.Context, batch map[string]types.KeysAndAtt
 	for paginator.HasMorePages() {
 		page, err := paginator.NextPage(ctx)
 		if err != nil {
-			return DynamoError().Method(opBatchGet).Message(err.Error())
+			return dynamoError().method(opBatchGet).message(err.Error())
 		}
 
 		mu.Lock()

@@ -25,12 +25,12 @@ const opQuery = "Query"
 //		Query(context.Background()).
 //		Unmarshal(&data, []string{"room"}).
 //		Run()
-func (i *Item) Query(ctx context.Context) *Output {
-	result := NewOutput(i, ctx)
+func (i *Item) Query(ctx context.Context) *output {
+	result := newOutput(i, ctx)
 
 	expr, err := i.getQueryExpression()
 	if err != nil {
-		result.item.err = DynamoError().Method(opQuery).Message(err.Error())
+		result.item.err = dynamoError().method(opQuery).message(err.Error())
 	}
 
 	input := dynamodb.QueryInput{
@@ -63,30 +63,30 @@ func (i *Item) Query(ctx context.Context) *Output {
 }
 
 // querySinglePage queries a single page of items from DynamoDB using the provided input.
-func (i *Item) querySinglePage(ctx context.Context, input *dynamodb.QueryInput, result *Output) (*Output, error) {
+func (i *Item) querySinglePage(ctx context.Context, input *dynamodb.QueryInput, result *output) (*output, error) {
 
 	output, err := i.c.client.Query(ctx, input)
 	if err != nil {
-		if err := GetDynamoDBError(opQuery, err); err != nil {
+		if err := getDynamoDBError(opQuery, err); err != nil {
 			return nil, err
 		}
-		return nil, DynamoError().Method(opQuery).Message(err.Error())
+		return nil, dynamoError().method(opQuery).message(err.Error())
 	}
 	result.Results = append(result.Results, output.Items...)
 	return result, nil
 }
 
 // queryAllPages queries all pages of results for a given DynamoDB query input.
-func (i *Item) queryAllPages(ctx context.Context, input *dynamodb.QueryInput, result *Output) (*Output, error) {
+func (i *Item) queryAllPages(ctx context.Context, input *dynamodb.QueryInput, result *output) (*output, error) {
 	paginator := dynamodb.NewQueryPaginator(i.c.client, input)
 	var items []map[string]types.AttributeValue
 	for paginator.HasMorePages() {
 		output, err := paginator.NextPage(ctx)
 		if err != nil {
-			if err := GetDynamoDBError(opQuery, err); err != nil {
+			if err := getDynamoDBError(opQuery, err); err != nil {
 				return nil, err
 			}
-			return nil, DynamoError().Method(opQuery).Message(err.Error())
+			return nil, dynamoError().method(opQuery).message(err.Error())
 		}
 		items = append(items, output.Items...)
 	}

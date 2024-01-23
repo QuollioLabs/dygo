@@ -30,7 +30,7 @@ func Test_client_without_region(t *testing.T) {
 		WithEndpoint(dbEndpoint),
 	)
 
-	expectedErr := DynamoError().Method("NewClient").Message(ErrMissingRegion).Error()
+	expectedErr := dynamoError().method("NewClient").message(errMissingRegion).Error()
 
 	if err == nil || err.Error() != expectedErr {
 		t.Fatalf("expected error : %v got : %v", expectedErr, err)
@@ -47,7 +47,7 @@ func Test_client_without_table(t *testing.T) {
 		WithEndpoint(dbEndpoint),
 	)
 
-	expectedErr := DynamoError().Method("NewClient").Message(ErrMissingTableName).Error()
+	expectedErr := dynamoError().method("NewClient").message(errMissingTableName).Error()
 
 	if err == nil || err.Error() != expectedErr {
 		t.Fatalf("expected error : %v got : %v", expectedErr, err)

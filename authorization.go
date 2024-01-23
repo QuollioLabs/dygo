@@ -7,20 +7,20 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-type Output struct {
+type output struct {
 	Results []map[string]types.AttributeValue
 	item    *Item
 	ctx     context.Context
 }
 
-func NewOutput(item *Item, ctx context.Context) *Output {
-	return &Output{
+func newOutput(item *Item, ctx context.Context) *output {
+	return &output{
 		item: item,
 		ctx:  ctx,
 	}
 }
 
-func (o *Output) Run() error {
+func (o *output) Run() error {
 	return o.item.err
 }
 
@@ -44,7 +44,7 @@ func (o *Output) Run() error {
 //	}
 //
 // Here Unmarshal will unmarshal only the items with _entity_type = "room".
-func (o *Output) Unmarshal(out Out, entityTypes []string) *Output {
+func (o *output) Unmarshal(out out, entityTypes []string) *output {
 	targetAttVals := []map[string]types.AttributeValue{}
 	for _, result := range o.Results {
 		switch v := result[o.item.c.gsis[0].partitionKey].(type) {
@@ -61,11 +61,11 @@ func (o *Output) Unmarshal(out Out, entityTypes []string) *Output {
 
 	err := out.Authorize(o.ctx)
 	if err != nil {
-		o.item.err = DynamoError().Method("authorization").Message(err.Error())
+		o.item.err = dynamoError().method("authorization").message(err.Error())
 	}
 	return o
 }
 
-type Out interface {
+type out interface {
 	Authorize(context.Context) error
 }

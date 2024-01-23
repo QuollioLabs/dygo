@@ -7,6 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
+// Item represents a DynamoDB item and provides methods to perform operations on it.
 type Item struct {
 	c            *Client
 	indexName    string
@@ -15,7 +16,7 @@ type Item struct {
 	item         item
 	err          error
 	batchData    keys
-	pagination   Pagination
+	pagination   pagination
 	filter       expression.ConditionBuilder
 	key          map[string]types.AttributeValue // required only for GetItem/DeleteItem
 	keyCondition expression.KeyConditionBuilder
@@ -31,7 +32,7 @@ type keys struct {
 	batchDelete map[int]map[string][]types.WriteRequest
 }
 
-type Pagination struct {
+type pagination struct {
 	lastEvaluatedKey map[string]types.AttributeValue
 	limit            int32
 }
@@ -249,7 +250,7 @@ func (i *Item) addBatchUpsertItem() {
 	}
 	batchIndex = i.findBatchPutIndexIfBatchFull(batchIndex)
 	// TODO: log error
-	itemJson, _ := MarshalMapUsingJSONTags(i.item)
+	itemJson, _ := marshalMapUsingJSONTags(i.item)
 	i.batchData.batchPut[batchIndex][i.c.tableName] = append(i.batchData.batchPut[batchIndex][i.c.tableName], types.WriteRequest{
 		PutRequest: &types.PutRequest{
 			Item: itemJson,
