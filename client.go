@@ -30,9 +30,6 @@ type Client struct {
 }
 
 // GSI is a struct that represents a Global Secondary Index (GSI) for the client.
-//
-// Example usage:
-
 type gsi struct {
 	indexName    string
 	partitionKey string
@@ -58,7 +55,7 @@ func WithPartitionKey(key string) Option {
 }
 
 // WithSortKey is an optional option function that sets the sort key for the client.
-// Example usage:
+// Example:
 //
 //	client := NewClient(WithSortKey("sk"))
 //	// This sets the sort key to "sk" for the client.
@@ -177,7 +174,7 @@ func loadDBConfigOptions(c Client) []func(*config.LoadOptions) error {
 // It initializes the DynamoDB client using provided configuration.
 // Returns the created Client instance or an error if any.
 //
-// Example usage:
+// Example:
 //
 //	dbEndpoint := "http://localhost:8000"
 //	dbClient, err := NewClient(
@@ -248,7 +245,7 @@ func (c *Client) PK(value any) *Item {
 // The f SortKeyFunc is a function that defines the sort key for the GSI query.
 // It returns an Item object that can be used to perform operations on the GSI.
 //
-// Example usage:
+// Example:
 //
 //	 err = db.
 //		GSI("gsi-name", "room", dygo.Equal("current")).
@@ -263,7 +260,7 @@ func (c *Client) GSI(indexName string, partitionKeyValue any, f SortKeyFunc) *It
 // The SortKeyFunc is used to determine the sorting order of the Item.
 // Possible values for SortKeyFunc are Equal, BeginsWith, Between, LessThan, LessThanEqual, GreaterThan, GreaterThanEqual.
 //
-// Example usage:
+// Example:
 //
 //	 err = db.
 //		PK("pk").
@@ -276,7 +273,7 @@ func (i *Item) SK(f SortKeyFunc) *Item {
 // Item returns a new instance of the Item struct, initialized with the provided item and client.
 // item must implement method : Validate() error
 //
-// Example usage:
+// Example:
 //
 // If passing employee struct, it should implement Validate() error
 //
@@ -298,7 +295,7 @@ func (c *Client) Item(item item) *Item {
 // Project sets the projection for the item.
 // It takes a variadic parameter `value` which represents the projection fields.
 //
-// Example usage:
+// Example:
 //
 //	 err = db.
 //		PK("pk").
@@ -312,7 +309,7 @@ func (i *Item) Project(value ...string) *Item {
 // Filter applies a filter function to the specified attribute of the item.
 // Possible values for FilterFunc are KeyEqual, KeyNotEqual, KeyBeginsWith, KeyBetween, KeyLessThan, KeyLessThanEqual, KeyGreaterThan, KeyGreaterThanEqual, KeyContains, KeyNotNull, KeyNull, KeyIn.
 //
-// Example usage:
+// Example:
 //
 //	 err = db.
 //		PK("pk").
@@ -326,7 +323,7 @@ func (i *Item) Filter(attributeName string, filterFunc FilterFunc) *Item {
 // AndFilter applies an additional logical AND filter to the existing filter using the specified attribute name and filter function.
 // It should be used after the Filter function.
 //
-// Example usage:
+// Example:
 //
 //	 err = db.
 //		PK("pk").
@@ -341,7 +338,7 @@ func (i *Item) AndFilter(attributeName string, filterFunc FilterFunc) *Item {
 // OrFilter method is used to chain multiple filters together using the OR operator.
 // It should be used after the Filter function.
 //
-// Example usage:
+// Example:
 //
 //	 err = db.
 //		PK("pk").
@@ -357,7 +354,7 @@ func (i *Item) OrFilter(attributeName string, filterFunc FilterFunc) *Item {
 // If omitEmptyKeys is true empty keys will not be added to BatchGetItem.
 // If omitEmptyKeys is false empty keys also be added to BatchGetItem.
 //
-// Example usage:
+// Example:
 //
 //	 item := new(Item)
 //	 for _, gId := range gIds {
@@ -374,7 +371,7 @@ func (i *Item) AddBatchGetItem(newItem *Item, omitEmptyKeys bool) {
 
 // AddBatchDeleteItem adds a new item to the batch delete list.
 //
-// Example usage:
+// Example:
 //
 //	 item := new(Item)
 //	 for _, gId := range gIds {
@@ -388,7 +385,7 @@ func (i *Item) AddBatchDeleteItem(newItem *Item) {
 
 // AddBatchUpsertItem adds a new item to the batch upsert operation.
 //
-// Example usage:
+// Example:
 //
 //	 item := new(Item)
 //	 for _, gId := range gIds {

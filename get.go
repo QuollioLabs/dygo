@@ -43,13 +43,13 @@ func (i *Item) GetItem(ctx context.Context, out interface{}) error {
 	output, err := i.c.client.GetItem(ctx, &input)
 	if err != nil {
 		if err := getDynamoDBError(opGet, err); err != nil {
-			return err
+			return dynamoError().method(opGet).message(err.Error())
 		}
 		return dynamoError().method(opGet).message(err.Error())
 	}
 
 	if err := attributevalue.UnmarshalMap(output.Item, &out); err != nil {
-		return err
+		return dynamoError().method(opGet).message(err.Error())
 	}
 
 	return nil

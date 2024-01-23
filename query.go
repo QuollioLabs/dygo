@@ -4,15 +4,17 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 const opQuery = "Query"
 
-// Query executes a query operation on the DynamoDB table associated with the Item.
+// QueryAuthorizeItem executes a query operation on the DynamoDB table.
 // The method returns an Output object containing the query results or an error if the query fails.
 // Items can be retrieved from the Output object using Unmarshall().
+//
 // Example:
 //
 //	err = db.
@@ -25,7 +27,7 @@ const opQuery = "Query"
 //		Query(context.Background()).
 //		Unmarshal(&data, []string{"room"}).
 //		Run()
-func (i *Item) Query(ctx context.Context) *output {
+func (i *Item) QueryAuthorizeItem(ctx context.Context) *output {
 	result := newOutput(i, ctx)
 
 	expr, err := i.getQueryExpression()
@@ -60,6 +62,62 @@ func (i *Item) Query(ctx context.Context) *output {
 		result.item.err = err
 	}
 	return out
+}
+
+// Query executes a query operation on the DynamoDB table.
+// The retrieves items and unmarshal into the provided 'out' parameter.
+// 'out' must be a pointer to a slice of structs or maps.
+// Returns an error if any error occurs during the query operation.
+//
+// Example:
+//
+//	var data []dataItem
+//	err = db.
+//		GSI("gsi-name", "room", Equal("current")).
+//		Query(context.Background(), &data)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+func (i *Item) Query(ctx context.Context, out interface{}) error {
+	if i.err != nil {
+		return i.err
+	}
+
+	result := newOutput(i, ctx)
+	expr, err := i.getQueryExpression()
+	if err != nil {
+		return dynamoError().method(opQuery).message(err.Error())
+	}
+
+	input := dynamodb.QueryInput{
+		TableName:                 aws.String(i.c.tableName),
+		KeyConditionExpression:    expr.KeyCondition(),
+		ProjectionExpression:      expr.Projection(),
+		FilterExpression:          expr.Filter(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		ExclusiveStartKey:         i.pagination.lastEvaluatedKey,
+	}
+
+	if i.useGSI {
+		input.IndexName = aws.String(i.indexName)
+	}
+
+	var items *output
+	if i.pagination.limit > 0 {
+		input.Limit = aws.Int32(i.pagination.limit)
+		items, err = i.querySinglePage(ctx, &input, result)
+	} else {
+		items, err = i.queryAllPages(ctx, &input, result)
+	}
+
+	if err != nil {
+		return dynamoError().method(opQuery).message(err.Error())
+	}
+	if err := attributevalue.UnmarshalListOfMaps(items.Results, &out); err != nil {
+		return dynamoError().method(opGet).message(err.Error())
+	}
+	return nil
 }
 
 // querySinglePage queries a single page of items from DynamoDB using the provided input.

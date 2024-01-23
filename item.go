@@ -104,6 +104,7 @@ func (i *Item) setProjection(value []string) *Item {
 }
 
 // LastEvaluatedKey sets the last evaluated key for pagination.
+//
 // Example:
 //
 //	err = db.
@@ -122,6 +123,7 @@ func (i *Item) LastEvaluatedKey(keys map[string]any) *Item {
 }
 
 // Limit sets the maximum number of items to be returned in the pagination.
+//
 // Example:
 //
 //	err = db.
