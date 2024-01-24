@@ -211,8 +211,6 @@ func NewClient(opts ...Option) (*Client, error) {
 func (c *Client) validate() *dError {
 	var msg string
 	switch {
-	case c.tableName == "":
-		msg = errMissingTableName
 	case c.partitionKey == "":
 		msg = errMissingPartitionKey
 	case c.region == "":
@@ -285,7 +283,7 @@ func (i *Item) SK(f SortKeyFunc) *Item {
 //		PK("pk").
 //		SK(dygo.Equal("sk")).
 //		GetItem(context.Background(), &emp)
-func (c *Client) Item(item item) *Item {
+func (c *Client) Item(item ItemData) *Item {
 	return &Item{
 		c:    c,
 		item: item,

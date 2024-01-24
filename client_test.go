@@ -47,9 +47,7 @@ func Test_client_without_table(t *testing.T) {
 		WithEndpoint(dbEndpoint),
 	)
 
-	expectedErr := dynamoError().method("NewClient").message(errMissingTableName).Error()
-
-	if err == nil || err.Error() != expectedErr {
-		t.Fatalf("expected error : %v got : %v", expectedErr, err)
+	if err != nil {
+		t.Fatalf("expected no error got : %v", err)
 	}
 }

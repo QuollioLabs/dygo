@@ -69,7 +69,7 @@ func (i *Item) GetItem(ctx context.Context, out interface{}) error {
 //		PK(PK).
 //		SK(Equal(SK)).
 //		GetItem(context.Background(), &d)
-func (i *Item) GetAuthorizedItem(ctx context.Context, out out) error {
+func (i *Item) GetAuthorizedItem(ctx context.Context, out Out) error {
 	if i.err != nil {
 		return i.err
 	}

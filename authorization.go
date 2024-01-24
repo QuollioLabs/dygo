@@ -44,7 +44,7 @@ func (o *output) Run() error {
 //	}
 //
 // Here Unmarshal will unmarshal only the items with _entity_type = "room".
-func (o *output) Unmarshal(out out, entityTypes []string) *output {
+func (o *output) Unmarshal(out Out, entityTypes []string) *output {
 	targetAttVals := []map[string]types.AttributeValue{}
 	for _, result := range o.Results {
 		switch v := result[o.item.c.gsis[0].partitionKey].(type) {
@@ -66,6 +66,8 @@ func (o *output) Unmarshal(out out, entityTypes []string) *output {
 	return o
 }
 
-type out interface {
+// Out is an interface that must be implemented by the struct that is used to unmarshal the DynamoDB results.
+// It has a Authorize method that is used to perform authorization on the retrieved items.
+type Out interface {
 	Authorize(context.Context) error
 }
