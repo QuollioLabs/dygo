@@ -19,6 +19,7 @@ go get github.com/QuollioLabs/dygo
 ```
 
 ## Quick Start
+
 Here's a quick example to get you started:
 
 ```golang
@@ -60,3 +61,8 @@ func main() {
     }
 }
 ```
+## Documentation
+
+Full `go doc` style documentation for the package can be viewed online without
+installing this package by using the GoDoc site here:
+http://pkg.go.dev/github.com/QuollioLabs/dygo
