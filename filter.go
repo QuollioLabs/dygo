@@ -2,6 +2,7 @@ package dygo
 
 import "github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 
+// FilterFunc returns a condition builder for a key.
 type FilterFunc func(string) expression.ConditionBuilder
 
 // KeyEqual returns a FilterFunc that filters based on the equality of a key's value.

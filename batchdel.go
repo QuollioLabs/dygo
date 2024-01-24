@@ -41,7 +41,7 @@ func (i *Item) BatchDeleteItem(ctx context.Context, threadCount int) error {
 
 	// Wait for all batch operations to complete
 	if err := g.Wait(); err != nil {
-		return DynamoError().Method(opBatchDelete).Message(err.Error())
+		return dynamoError().method(opBatchDelete).message(err.Error())
 	}
 
 	return nil
@@ -59,7 +59,7 @@ func (i *Item) processBatchDelete(ctx context.Context, batch map[string][]types.
 
 		result, err := i.c.client.BatchWriteItem(ctx, input)
 		if err != nil {
-			return DynamoError().Method(opBatchDelete).Message(err.Error())
+			return dynamoError().method(opBatchDelete).message(err.Error())
 		}
 
 		if len(result.UnprocessedItems) == 0 || retries >= maxRetriesDelete {

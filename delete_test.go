@@ -6,7 +6,7 @@ import (
 )
 
 func Test_delete_item(t *testing.T) {
-	db, err := GetClient()
+	db, err := getClient()
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}

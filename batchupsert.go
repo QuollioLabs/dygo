@@ -50,7 +50,7 @@ func (i *Item) BatchUpsertItem(ctx context.Context, threadCount int) error {
 
 	// Wait for all batch operations to complete
 	if err := g.Wait(); err != nil {
-		return DynamoError().Method(opBatchUpsert).Message(err.Error())
+		return dynamoError().method(opBatchUpsert).message(err.Error())
 	}
 	return nil
 }
@@ -65,7 +65,7 @@ func (i *Item) processBatchUpsert(ctx context.Context, batch map[string][]types.
 
 		result, err := i.c.client.BatchWriteItem(ctx, input)
 		if err != nil {
-			return DynamoError().Method(opBatchUpsert).Message(err.Error())
+			return dynamoError().method(opBatchUpsert).message(err.Error())
 		}
 
 		if len(result.UnprocessedItems) == 0 || retries >= maxRetriesUpsert {

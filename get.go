@@ -16,7 +16,7 @@ const opGet = "Get"
 // Example:
 //
 //	d := dataItem{}
-//		err = db.
+//	err = db.
 //		PK(PK).
 //		SK(Equal(SK)).
 //		GetItem(context.Background(), &d)
@@ -27,7 +27,7 @@ func (i *Item) GetItem(ctx context.Context, out interface{}) error {
 
 	expr, err := i.getItemExpression()
 	if err != nil {
-		return DynamoError().Method(opGet).Message(err.Error())
+		return dynamoError().method(opGet).message(err.Error())
 	}
 
 	input := dynamodb.GetItemInput{
@@ -42,14 +42,14 @@ func (i *Item) GetItem(ctx context.Context, out interface{}) error {
 
 	output, err := i.c.client.GetItem(ctx, &input)
 	if err != nil {
-		if err := GetDynamoDBError(opGet, err); err != nil {
-			return err
+		if err := getDynamoDBError(opGet, err); err != nil {
+			return dynamoError().method(opGet).message(err.Error())
 		}
-		return DynamoError().Method(opGet).Message(err.Error())
+		return dynamoError().method(opGet).message(err.Error())
 	}
 
 	if err := attributevalue.UnmarshalMap(output.Item, &out); err != nil {
-		return err
+		return dynamoError().method(opGet).message(err.Error())
 	}
 
 	return nil
@@ -65,7 +65,7 @@ func (i *Item) GetItem(ctx context.Context, out interface{}) error {
 //		return nil
 //	}
 //	d := dataItem{}
-//		err = db.
+//	err = db.
 //		PK(PK).
 //		SK(Equal(SK)).
 //		GetItem(context.Background(), &d)
@@ -76,7 +76,7 @@ func (i *Item) GetAuthorizedItem(ctx context.Context, out Out) error {
 
 	expr, err := i.getItemExpression()
 	if err != nil {
-		return DynamoError().Method(opGet).Message(err.Error())
+		return dynamoError().method(opGet).message(err.Error())
 	}
 
 	input := dynamodb.GetItemInput{
@@ -91,7 +91,7 @@ func (i *Item) GetAuthorizedItem(ctx context.Context, out Out) error {
 
 	output, err := i.c.client.GetItem(ctx, &input)
 	if err != nil {
-		return GetDynamoDBError(opGet, err)
+		return getDynamoDBError(opGet, err)
 	}
 
 	if err := attributevalue.UnmarshalMap(output.Item, &out); err != nil {

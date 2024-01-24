@@ -1,27 +1,31 @@
 package dygo
 
 import (
+	"reflect"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
+// Item represents a DynamoDB item and provides methods to perform operations on it.
 type Item struct {
 	c            *Client
 	indexName    string
 	projection   string
 	useGSI       bool
-	item         item
+	item         ItemData
 	err          error
 	batchData    keys
-	pagination   Pagination
+	pagination   pagination
 	filter       expression.ConditionBuilder
 	key          map[string]types.AttributeValue // required only for GetItem/DeleteItem
 	keyCondition expression.KeyConditionBuilder
 }
 
-type item interface {
+// ItemData is an interface that represents a DynamoDB item. Each data item must implement this interface.
+// It is used to validate the item using user defined Validate function before performing any operations on it.
+type ItemData interface {
 	Validate() error
 }
 
@@ -31,7 +35,7 @@ type keys struct {
 	batchDelete map[int]map[string][]types.WriteRequest
 }
 
-type Pagination struct {
+type pagination struct {
 	lastEvaluatedKey map[string]types.AttributeValue
 	limit            int32
 }
@@ -103,6 +107,7 @@ func (i *Item) setProjection(value []string) *Item {
 }
 
 // LastEvaluatedKey sets the last evaluated key for pagination.
+//
 // Example:
 //
 //	err = db.
@@ -121,6 +126,7 @@ func (i *Item) LastEvaluatedKey(keys map[string]any) *Item {
 }
 
 // Limit sets the maximum number of items to be returned in the pagination.
+//
 // Example:
 //
 //	err = db.
@@ -169,10 +175,13 @@ func (i *Item) addBatchGetItem() {
 		i.batchData.batchGet[batchIndex][i.c.tableName] = types.KeysAndAttributes{Keys: []map[string]types.AttributeValue{}}
 	}
 	batchIndex = i.findBatchIndexIfBatchFull(batchIndex)
-	// Extract the KeysAndAttributes struct, modify it, and put it back in the map.
-	keysAndAttributes := i.batchData.batchGet[batchIndex][i.c.tableName]
-	keysAndAttributes.Keys = append(keysAndAttributes.Keys, i.key)
-	i.batchData.batchGet[batchIndex][i.c.tableName] = keysAndAttributes
+	// Only add the key if it's not already in the batch
+	if !i.keyExists(batchIndex, i.key) {
+		// Extract the KeysAndAttributes struct, modify it, and put it back in the map.
+		keysAndAttributes := i.batchData.batchGet[batchIndex][i.c.tableName]
+		keysAndAttributes.Keys = append(keysAndAttributes.Keys, i.key)
+		i.batchData.batchGet[batchIndex][i.c.tableName] = keysAndAttributes
+	}
 }
 
 // findBatchIndex returns the index of the current batch in the Item's batchData.
@@ -196,6 +205,15 @@ func (i *Item) findBatchIndexIfBatchFull(batchIndex int) int {
 		i.batchData.batchGet[batchIndex] = make(map[string]types.KeysAndAttributes)
 	}
 	return batchIndex
+}
+
+func (i *Item) keyExists(batchIndex int, key map[string]types.AttributeValue) bool {
+	for _, existingKey := range i.batchData.batchGet[batchIndex][i.c.tableName].Keys {
+		if reflect.DeepEqual(existingKey, key) {
+			return true
+		}
+	}
+	return false
 }
 
 // addBatchDeleteItem adds a delete request for the current item to the batch delete operation.
@@ -249,7 +267,7 @@ func (i *Item) addBatchUpsertItem() {
 	}
 	batchIndex = i.findBatchPutIndexIfBatchFull(batchIndex)
 	// TODO: log error
-	itemJson, _ := MarshalMapUsingJSONTags(i.item)
+	itemJson, _ := marshalMapUsingJSONTags(i.item)
 	i.batchData.batchPut[batchIndex][i.c.tableName] = append(i.batchData.batchPut[batchIndex][i.c.tableName], types.WriteRequest{
 		PutRequest: &types.PutRequest{
 			Item: itemJson,

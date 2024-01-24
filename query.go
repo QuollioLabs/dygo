@@ -4,15 +4,17 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 const opQuery = "Query"
 
-// Query executes a query operation on the DynamoDB table associated with the Item.
+// QueryAuthorizeItem executes a query operation on the DynamoDB table.
 // The method returns an Output object containing the query results or an error if the query fails.
 // Items can be retrieved from the Output object using Unmarshall().
+//
 // Example:
 //
 //	err = db.
@@ -25,12 +27,12 @@ const opQuery = "Query"
 //		Query(context.Background()).
 //		Unmarshal(&data, []string{"room"}).
 //		Run()
-func (i *Item) Query(ctx context.Context) *Output {
-	result := NewOutput(i, ctx)
+func (i *Item) QueryAuthorizeItem(ctx context.Context) *output {
+	result := newOutput(i, ctx)
 
 	expr, err := i.getQueryExpression()
 	if err != nil {
-		result.item.err = DynamoError().Method(opQuery).Message(err.Error())
+		result.item.err = dynamoError().method(opQuery).message(err.Error())
 	}
 
 	input := dynamodb.QueryInput{
@@ -62,31 +64,87 @@ func (i *Item) Query(ctx context.Context) *Output {
 	return out
 }
 
+// Query executes a query operation on the DynamoDB table.
+// The retrieves items and unmarshal into the provided 'out' parameter.
+// 'out' must be a pointer to a slice of structs or maps.
+// Returns an error if any error occurs during the query operation.
+//
+// Example:
+//
+//	var data []dataItem
+//	err = db.
+//		GSI("gsi-name", "room", Equal("current")).
+//		Query(context.Background(), &data)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+func (i *Item) Query(ctx context.Context, out interface{}) error {
+	if i.err != nil {
+		return i.err
+	}
+
+	result := newOutput(i, ctx)
+	expr, err := i.getQueryExpression()
+	if err != nil {
+		return dynamoError().method(opQuery).message(err.Error())
+	}
+
+	input := dynamodb.QueryInput{
+		TableName:                 aws.String(i.c.tableName),
+		KeyConditionExpression:    expr.KeyCondition(),
+		ProjectionExpression:      expr.Projection(),
+		FilterExpression:          expr.Filter(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		ExclusiveStartKey:         i.pagination.lastEvaluatedKey,
+	}
+
+	if i.useGSI {
+		input.IndexName = aws.String(i.indexName)
+	}
+
+	var items *output
+	if i.pagination.limit > 0 {
+		input.Limit = aws.Int32(i.pagination.limit)
+		items, err = i.querySinglePage(ctx, &input, result)
+	} else {
+		items, err = i.queryAllPages(ctx, &input, result)
+	}
+
+	if err != nil {
+		return dynamoError().method(opQuery).message(err.Error())
+	}
+	if err := attributevalue.UnmarshalListOfMaps(items.Results, &out); err != nil {
+		return dynamoError().method(opGet).message(err.Error())
+	}
+	return nil
+}
+
 // querySinglePage queries a single page of items from DynamoDB using the provided input.
-func (i *Item) querySinglePage(ctx context.Context, input *dynamodb.QueryInput, result *Output) (*Output, error) {
+func (i *Item) querySinglePage(ctx context.Context, input *dynamodb.QueryInput, result *output) (*output, error) {
 
 	output, err := i.c.client.Query(ctx, input)
 	if err != nil {
-		if err := GetDynamoDBError(opQuery, err); err != nil {
+		if err := getDynamoDBError(opQuery, err); err != nil {
 			return nil, err
 		}
-		return nil, DynamoError().Method(opQuery).Message(err.Error())
+		return nil, dynamoError().method(opQuery).message(err.Error())
 	}
 	result.Results = append(result.Results, output.Items...)
 	return result, nil
 }
 
 // queryAllPages queries all pages of results for a given DynamoDB query input.
-func (i *Item) queryAllPages(ctx context.Context, input *dynamodb.QueryInput, result *Output) (*Output, error) {
+func (i *Item) queryAllPages(ctx context.Context, input *dynamodb.QueryInput, result *output) (*output, error) {
 	paginator := dynamodb.NewQueryPaginator(i.c.client, input)
 	var items []map[string]types.AttributeValue
 	for paginator.HasMorePages() {
 		output, err := paginator.NextPage(ctx)
 		if err != nil {
-			if err := GetDynamoDBError(opQuery, err); err != nil {
+			if err := getDynamoDBError(opQuery, err); err != nil {
 				return nil, err
 			}
-			return nil, DynamoError().Method(opQuery).Message(err.Error())
+			return nil, dynamoError().method(opQuery).message(err.Error())
 		}
 		items = append(items, output.Items...)
 	}

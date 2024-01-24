@@ -20,7 +20,7 @@ func createAttributeValue(key interface{}) types.AttributeValue {
 	return nil
 }
 
-// MarshalMapUsingJSONTags marshals the given input interface into a map of DynamoDB attribute values,
+// marshalMapUsingJSONTags marshals the given input interface into a map of DynamoDB attribute values,
 // using JSON tags for serialization. It first converts the input into JSON data, then unmarshals
 // the JSON data into a map[string]interface{}. Finally, it marshals the map into a map[string]types.AttributeValue
 // using the attributevalue.MarshalMap function from the AWS SDK for Go.
@@ -29,7 +29,7 @@ func createAttributeValue(key interface{}) types.AttributeValue {
 // The resulting map will have the attribute names as keys and the corresponding attribute values as values.
 //
 // If any error occurs during the marshaling process, it will be returned along with a nil map.
-func MarshalMapUsingJSONTags(i interface{}) (map[string]types.AttributeValue, error) {
+func marshalMapUsingJSONTags(i interface{}) (map[string]types.AttributeValue, error) {
 	jsonData, err := json.Marshal(i)
 	if err != nil {
 		return nil, err
@@ -65,23 +65,23 @@ func (i *Item) validate(key string, value any) error {
 
 // validateFilterOr validates the filter OR condition for an Item.
 func (i *Item) validateFilterOr(value any) error {
-	return DynamoError().Method("FilterAnd").Message("invalid filter OR condition")
+	return dynamoError().method("FilterAnd").message("invalid filter OR condition")
 }
 
 // validateFilterAnd validates the filter AND condition for an Item.
 func (i *Item) validateFilterAnd(value any) error {
-	return DynamoError().Method("FilterAnd").Message("invalid filter AND condition")
+	return dynamoError().method("FilterAnd").message("invalid filter AND condition")
 }
 
 // validateGSI validates the Global Secondary Index (GSI) value.
 func (i *Item) validateGSI(value any) error {
-	return DynamoError().Method("GSI").Message("unsupported GSI")
+	return dynamoError().method("GSI").message("unsupported GSI")
 }
 
 // validatePartitionKey checks if the provided partition key value is empty.
 func (i *Item) validatePartitionKey(value any) error {
 	if value == "" {
-		return DynamoError().Method("PK").Message("partition key can't be empty")
+		return dynamoError().method("PK").message("partition key can't be empty")
 	}
 	return nil
 }
@@ -96,7 +96,7 @@ func (i *Item) validateSortKey(value any) error {
 		msg = "sort key can't be empty"
 	}
 	if msg != "" {
-		return DynamoError().Method("SK").Message(msg)
+		return dynamoError().method("SK").message(msg)
 	}
 	return nil
 }
@@ -106,7 +106,7 @@ func (i *Item) validateProjecion(value any) error {
 	msg := ""
 	if value == "" {
 		msg = "projection can't be empty"
-		return DynamoError().Method("Projection").Message(msg)
+		return dynamoError().method("Projection").message(msg)
 	}
 	return nil
 }

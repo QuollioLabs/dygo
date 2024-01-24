@@ -1,3 +1,4 @@
+// dygo is a Go package that provides a simple and clean interface for interacting with DynamoDB.
 package dygo
 
 import (
@@ -14,19 +15,22 @@ import (
 
 type Option func(*Client) error
 
+// Client is the main struct for the dygo package. It contains DynamoDB client, table name, partition key,
+// sort key, and other configuration options.
 type Client struct {
 	client       *dynamodb.Client
 	region       string
 	tableName    string
 	partitionKey string
 	sortKey      string
-	gsis         []GSI
+	gsis         []gsi
 	endpoint     string
 	maxRetry     int
 	logger       *log.Logger
 }
 
-type GSI struct {
+// GSI is a struct that represents a Global Secondary Index (GSI) for the client.
+type gsi struct {
 	indexName    string
 	partitionKey string
 	sortKey      string
@@ -51,7 +55,7 @@ func WithPartitionKey(key string) Option {
 }
 
 // WithSortKey is an optional option function that sets the sort key for the client.
-// Example usage:
+// Example:
 //
 //	client := NewClient(WithSortKey("sk"))
 //	// This sets the sort key to "sk" for the client.
@@ -73,7 +77,7 @@ func WithGSI(indexName, partitionKey, sortKey string) Option {
 				return errors.New("duplicate gsi index name")
 			}
 		}
-		c.gsis = append(c.gsis, GSI{indexName, partitionKey, sortKey})
+		c.gsis = append(c.gsis, gsi{indexName, partitionKey, sortKey})
 		return nil
 	}
 }
@@ -119,12 +123,12 @@ func WithRetry(count int) Option {
 }
 
 // Define a custom logger that satisfies the log.Logger interface.
-type CustomLogger struct {
+type customLogger struct {
 	logger *log.Logger
 }
 
 // TODO: fix me
-func (l CustomLogger) Logf(classification logging.Classification, format string, v ...any) {
+func (l customLogger) Logf(classification logging.Classification, format string, v ...any) {
 	// Here you can format the log message as you like and
 	// write it to the underlying logger.
 	l.logger.Printf("%v:%v", classification, v)
@@ -138,8 +142,8 @@ func loadDBConfigOptions(c Client) []func(*config.LoadOptions) error {
 	options = append(options, config.WithRegion(c.region))
 
 	if c.logger != nil {
-		customLogger := CustomLogger{logger: c.logger}
-		options = append(options, config.WithLogger(customLogger))
+		cl := customLogger{logger: c.logger}
+		options = append(options, config.WithLogger(cl))
 		options = append(options, config.WithClientLogMode(aws.LogRetries|aws.LogRequest))
 	}
 
@@ -169,6 +173,18 @@ func loadDBConfigOptions(c Client) []func(*config.LoadOptions) error {
 // NewClient creates a new instance of the Client struct with the provided options.
 // It initializes the DynamoDB client using provided configuration.
 // Returns the created Client instance or an error if any.
+//
+// Example:
+//
+//	dbEndpoint := "http://localhost:8000"
+//	dbClient, err := NewClient(
+//		WithTableName("test-table-1"),
+//		WithRegion("ap-northeast-1"),
+//		WithPartitionKey("_partition_key"),
+//		WithSortKey("_sort_key"),
+//		WithGSI("gsi-name", "_entity_type", "_sort_key"),
+//		WithEndpoint(dbEndpoint),
+//	)
 func NewClient(opts ...Option) (*Client, error) {
 	c := &Client{}
 	for _, opt := range opts {
@@ -192,32 +208,30 @@ func NewClient(opts ...Option) (*Client, error) {
 // validate checks if the required fields of the Client struct are set.
 // If any required field is missing, it returns an Error with the corresponding error message.
 // If all required fields are set, it returns nil.
-func (c *Client) validate() *Error {
+func (c *Client) validate() *dError {
 	var msg string
 	switch {
-	case c.tableName == "":
-		msg = ErrMissingTableName
 	case c.partitionKey == "":
-		msg = ErrMissingPartitionKey
+		msg = errMissingPartitionKey
 	case c.region == "":
-		msg = ErrMissingRegion
+		msg = errMissingRegion
 	case c.client == nil:
-		msg = ErrMissingClient
+		msg = errMissingClient
 	}
 	if msg != "" {
-		return DynamoError().Method("NewClient").Message(msg)
+		return dynamoError().method("NewClient").message(msg)
 	}
 	return nil
 }
 
-// Table sets the name of the table for the query.
+// Table sets the name of the table for the current query.
 // It returns the modified Client instance.
 func (c *Client) Table(value string) *Client {
 	c.tableName = value
 	return c
 }
 
-// PK returns an Item with the specified value as the partition key.
+// PK sets the specified value as the partition key value in current query.
 func (c *Client) PK(value any) *Item {
 	return c.partition(c.partitionKey, value)
 }
@@ -228,7 +242,8 @@ func (c *Client) PK(value any) *Item {
 // The partitionKeyValue specifies the value of the partition key for the GSI query.
 // The f SortKeyFunc is a function that defines the sort key for the GSI query.
 // It returns an Item object that can be used to perform operations on the GSI.
-// Example usage:
+//
+// Example:
 //
 //	 err = db.
 //		GSI("gsi-name", "room", dygo.Equal("current")).
@@ -239,10 +254,11 @@ func (c *Client) GSI(indexName string, partitionKeyValue any, f SortKeyFunc) *It
 	return c.secondaryIndex(indexName, partitionKeyValue, f)
 }
 
-// SK applies the provided sort key value along with SortKeyFunc.
+// SK sets the provided sort key value along with SortKeyFunc.
 // The SortKeyFunc is used to determine the sorting order of the Item.
 // Possible values for SortKeyFunc are Equal, BeginsWith, Between, LessThan, LessThanEqual, GreaterThan, GreaterThanEqual.
-// Example usage:
+//
+// Example:
 //
 //	 err = db.
 //		PK("pk").
@@ -254,18 +270,20 @@ func (i *Item) SK(f SortKeyFunc) *Item {
 
 // Item returns a new instance of the Item struct, initialized with the provided item and client.
 // item must implement method : Validate() error
-// for example:
+//
+// Example:
+//
 // If passing employee struct, it should implement Validate() error
 //
-//	 func (e employee) Validate() error {
+//	func (e employee) Validate() error {
 //		return nil
-//	 }
-//	 emp := employee{}
-//		err = db.
-//			PK("pk").
-//			SK(dygo.Equal("sk")).
-//			GetItem(context.Background(), &emp)
-func (c *Client) Item(item item) *Item {
+//	}
+//	emp := employee{}
+//	err = db.
+//		PK("pk").
+//		SK(dygo.Equal("sk")).
+//		GetItem(context.Background(), &emp)
+func (c *Client) Item(item ItemData) *Item {
 	return &Item{
 		c:    c,
 		item: item,
@@ -275,7 +293,7 @@ func (c *Client) Item(item item) *Item {
 // Project sets the projection for the item.
 // It takes a variadic parameter `value` which represents the projection fields.
 //
-// Example usage:
+// Example:
 //
 //	 err = db.
 //		PK("pk").
@@ -289,7 +307,7 @@ func (i *Item) Project(value ...string) *Item {
 // Filter applies a filter function to the specified attribute of the item.
 // Possible values for FilterFunc are KeyEqual, KeyNotEqual, KeyBeginsWith, KeyBetween, KeyLessThan, KeyLessThanEqual, KeyGreaterThan, KeyGreaterThanEqual, KeyContains, KeyNotNull, KeyNull, KeyIn.
 //
-// Example usage:
+// Example:
 //
 //	 err = db.
 //		PK("pk").
@@ -303,7 +321,7 @@ func (i *Item) Filter(attributeName string, filterFunc FilterFunc) *Item {
 // AndFilter applies an additional logical AND filter to the existing filter using the specified attribute name and filter function.
 // It should be used after the Filter function.
 //
-// Example usage:
+// Example:
 //
 //	 err = db.
 //		PK("pk").
@@ -318,7 +336,7 @@ func (i *Item) AndFilter(attributeName string, filterFunc FilterFunc) *Item {
 // OrFilter method is used to chain multiple filters together using the OR operator.
 // It should be used after the Filter function.
 //
-// Example usage:
+// Example:
 //
 //	 err = db.
 //		PK("pk").
@@ -334,7 +352,7 @@ func (i *Item) OrFilter(attributeName string, filterFunc FilterFunc) *Item {
 // If omitEmptyKeys is true empty keys will not be added to BatchGetItem.
 // If omitEmptyKeys is false empty keys also be added to BatchGetItem.
 //
-// Example usage:
+// Example:
 //
 //	 item := new(Item)
 //	 for _, gId := range gIds {
@@ -350,7 +368,8 @@ func (i *Item) AddBatchGetItem(newItem *Item, omitEmptyKeys bool) {
 }
 
 // AddBatchDeleteItem adds a new item to the batch delete list.
-// Example usage:
+//
+// Example:
 //
 //	 item := new(Item)
 //	 for _, gId := range gIds {
@@ -363,7 +382,8 @@ func (i *Item) AddBatchDeleteItem(newItem *Item) {
 }
 
 // AddBatchUpsertItem adds a new item to the batch upsert operation.
-// Example usage:
+//
+// Example:
 //
 //	 item := new(Item)
 //	 for _, gId := range gIds {
@@ -373,7 +393,7 @@ func (i *Item) AddBatchDeleteItem(newItem *Item) {
 func (i *Item) AddBatchUpsertItem(newItem *Item) {
 	err := i.item.Validate()
 	if err != nil {
-		newItem.err = DynamoError().Method("opValidate").Message(err.Error())
+		newItem.err = dynamoError().method("opValidate").message(err.Error())
 		return
 	}
 	i.fillItem(newItem)

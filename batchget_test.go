@@ -7,7 +7,7 @@ import (
 )
 
 func Test_batchgetauthorized_item_happy_path(t *testing.T) {
-	db, err := GetClient()
+	db, err := getClient()
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
@@ -42,8 +42,45 @@ func Test_batchgetauthorized_item_happy_path(t *testing.T) {
 	}
 }
 
+func Test_batchgetauthorized_item_duplicate_keys(t *testing.T) {
+	db, err := getClient()
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	SK := "current"
+	gIds := createItem(t, db, 4)
+	item := new(Item)
+	for _, gId := range gIds {
+		db.PK(gId).SK(Equal(SK)).AddBatchGetItem(item, true)
+		db.PK(gId).SK(Equal(SK)).AddBatchGetItem(item, true)
+	}
+
+	var data dataSlice
+	err = item.BatchGetAuthorizedItem(context.Background(), 10).
+		Unmarshal(&data, []string{"room"}).
+		Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(data) != len(gIds) {
+		t.Fatalf("expected %v items but got %v", len(gIds), len(data))
+	}
+
+	for _, d := range data {
+		if exist := stringExists(gIds, d.PK); !exist {
+			t.Fatalf("expected _partition_key : %v not found", d.PK)
+		}
+	}
+	// remove item
+	for _, gId := range gIds {
+		removeItem(t, db, gId, SK)
+	}
+}
+
 func Test_batchgetauthorized_item_omitEmptyKeys_false(t *testing.T) {
-	db, err := GetClient()
+	db, err := getClient()
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
@@ -75,7 +112,7 @@ func Test_batchgetauthorized_item_omitEmptyKeys_false(t *testing.T) {
 }
 
 func Test_batchget_item_happy_path(t *testing.T) {
-	db, err := GetClient()
+	db, err := getClient()
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
@@ -105,7 +142,7 @@ func Test_batchget_item_happy_path(t *testing.T) {
 }
 
 func Test_batchget_item_omitEmptyKeys_false(t *testing.T) {
-	db, err := GetClient()
+	db, err := getClient()
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}

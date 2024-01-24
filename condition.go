@@ -2,6 +2,7 @@ package dygo
 
 import "github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 
+// SortKeyFunc returns a KeyConditionBuilder and a value of any type.
 type SortKeyFunc func(string) (expression.KeyConditionBuilder, any)
 
 // Equal returns a SortKeyFunc that generates a KeyConditionBuilder for the "Equal" condition.

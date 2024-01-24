@@ -7,44 +7,44 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Error struct {
+type dError struct {
 	Function     string
 	ErrorMessage error
 }
 
 const (
-	ErrDygoError           = "DygoError"
-	ErrMissingTableName    = "table name is missing"
-	ErrMissingPartitionKey = "partition key is missing"
-	ErrMissingRegion       = "region is missing"
-	ErrMissingClient       = "something went wrong while creating the client"
+	errDygoError           = "DygoError"
+	errMissingTableName    = "table name is missing"
+	errMissingPartitionKey = "partition key is missing"
+	errMissingRegion       = "region is missing"
+	errMissingClient       = "something went wrong while creating the client"
 )
 
 // Error returns the error message associated with the Error struct.
 // It formats the error message with the error type, method name, and error message.
-func (e *Error) Error() string {
-	return fmt.Sprintf("%s:: method : %s() message: %s", ErrDygoError, e.Function, e.ErrorMessage)
+func (e *dError) Error() string {
+	return fmt.Sprintf("%s:: method : %s() message: %s", errDygoError, e.Function, e.ErrorMessage)
 }
 
 // DynamoError returns a new instance of Error.
-func DynamoError() *Error {
-	return &Error{}
+func dynamoError() *dError {
+	return &dError{}
 }
 
 // Method sets the function name associated with the error.
-func (e *Error) Method(method string) *Error {
+func (e *dError) method(method string) *dError {
 	e.Function = method
 	return e
 }
 
 // Message sets the error message for the Error instance.
-func (e *Error) Message(msg string) *Error {
+func (e *dError) message(msg string) *dError {
 	e.ErrorMessage = errors.New(msg)
 	return e
 }
 
-// GetDynamoDBError returns a custom error based on the type of error encountered in DynamoDB operations.
-func GetDynamoDBError(method string, err error) error {
+// getDynamoDBError returns a custom error based on the type of error encountered in DynamoDB operations.
+func getDynamoDBError(method string, err error) error {
 	method = fmt.Sprintf("%s()", method)
 	var cce *types.ConditionalCheckFailedException
 	var dce *types.DuplicateItemException
@@ -56,22 +56,22 @@ func GetDynamoDBError(method string, err error) error {
 	switch {
 	case errors.As(err, &cce):
 		if method == "Delete()" {
-			return DynamoError().Method(method).Message("key doesnt exist")
+			return dynamoError().method(method).message("key doesnt exist")
 		}
 		if method == "Create()" {
-			return DynamoError().Method(method).Message("duplicate item")
+			return dynamoError().method(method).message("duplicate item")
 		}
-		return DynamoError().Method(method).Message("key doesnt exist")
+		return dynamoError().method(method).message("key doesnt exist")
 	case errors.As(err, &dce):
-		return DynamoError().Method(method).Message("duplicate item")
+		return dynamoError().method(method).message("duplicate item")
 	case errors.As(err, &infe):
-		return DynamoError().Method(method).Message("index doesnt exist")
+		return dynamoError().method(method).message("index doesnt exist")
 	case errors.As(err, &ise):
-		return DynamoError().Method(method).Message("internal server error")
+		return dynamoError().method(method).message("internal server error")
 	case errors.As(err, &rnfe):
-		return DynamoError().Method(method).Message("table/index doesnt exist")
+		return dynamoError().method(method).message("table/index doesnt exist")
 	case errors.As(err, &tnfe):
-		return DynamoError().Method(method).Message("table doesnt exist")
+		return dynamoError().method(method).message("table doesnt exist")
 	}
 	return nil
 }

@@ -9,7 +9,7 @@ import (
 func Test_batchupsert_item_happy_path(t *testing.T) {
 	gId := newPK("room")
 
-	db, err := GetClient()
+	db, err := getClient()
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
@@ -45,7 +45,7 @@ func Test_batchupsert_item_happy_path(t *testing.T) {
 func Test_batchupsert_item_invalid_data(t *testing.T) {
 	gId := newPK("room")
 
-	db, err := GetClient()
+	db, err := getClient()
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
