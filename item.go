@@ -1,6 +1,7 @@
 package dygo
 
 import (
+	"reflect"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
@@ -13,7 +14,7 @@ type Item struct {
 	indexName    string
 	projection   string
 	useGSI       bool
-	item         item
+	item         ItemData
 	err          error
 	batchData    keys
 	pagination   pagination
@@ -22,7 +23,9 @@ type Item struct {
 	keyCondition expression.KeyConditionBuilder
 }
 
-type item interface {
+// ItemData is an interface that represents a DynamoDB item. Each data item must implement this interface.
+// It is used to validate the item using user defined Validate function before performing any operations on it.
+type ItemData interface {
 	Validate() error
 }
 
@@ -172,10 +175,13 @@ func (i *Item) addBatchGetItem() {
 		i.batchData.batchGet[batchIndex][i.c.tableName] = types.KeysAndAttributes{Keys: []map[string]types.AttributeValue{}}
 	}
 	batchIndex = i.findBatchIndexIfBatchFull(batchIndex)
-	// Extract the KeysAndAttributes struct, modify it, and put it back in the map.
-	keysAndAttributes := i.batchData.batchGet[batchIndex][i.c.tableName]
-	keysAndAttributes.Keys = append(keysAndAttributes.Keys, i.key)
-	i.batchData.batchGet[batchIndex][i.c.tableName] = keysAndAttributes
+	// Only add the key if it's not already in the batch
+	if !i.keyExists(batchIndex, i.key) {
+		// Extract the KeysAndAttributes struct, modify it, and put it back in the map.
+		keysAndAttributes := i.batchData.batchGet[batchIndex][i.c.tableName]
+		keysAndAttributes.Keys = append(keysAndAttributes.Keys, i.key)
+		i.batchData.batchGet[batchIndex][i.c.tableName] = keysAndAttributes
+	}
 }
 
 // findBatchIndex returns the index of the current batch in the Item's batchData.
@@ -199,6 +205,15 @@ func (i *Item) findBatchIndexIfBatchFull(batchIndex int) int {
 		i.batchData.batchGet[batchIndex] = make(map[string]types.KeysAndAttributes)
 	}
 	return batchIndex
+}
+
+func (i *Item) keyExists(batchIndex int, key map[string]types.AttributeValue) bool {
+	for _, existingKey := range i.batchData.batchGet[batchIndex][i.c.tableName].Keys {
+		if reflect.DeepEqual(existingKey, key) {
+			return true
+		}
+	}
+	return false
 }
 
 // addBatchDeleteItem adds a delete request for the current item to the batch delete operation.
