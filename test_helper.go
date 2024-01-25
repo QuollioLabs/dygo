@@ -11,6 +11,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const blank = ""
+
 type dataSlice []dataItem
 type dataItem struct {
 	PK           string `json:"_partition_key" dynamodbav:"_partition_key"`
@@ -60,7 +62,8 @@ func lookupEntityType(pk string) string {
 }
 
 func getEntityTypePrefix(entityType string) string {
-	switch entityType {
+	et := getSplittedKey(entityType, "#")
+	switch et {
 	case "room":
 		return "rm"
 	case "inventory":
@@ -108,18 +111,27 @@ func (d *dataItem) isValidSK() ozzo.RuleFunc {
 	}
 }
 
-func getClient() (*Client, error) {
+func getClient(keySeparator string, withTable bool) (*Client, error) {
 	dbEndpoint := "http://localhost:8000"
-	db, err := NewClient(
-		WithTableName("test-table-1"),
+	if withTable {
+		return NewClient(
+			WithTableName("test-table-1"),
+			WithRegion("ap-northeast-1"),
+			WithPartitionKey("_partition_key"),
+			WithSortKey("_sort_key"),
+			WithKeySeparator(keySeparator),
+			WithGSI("gsi-name", "_entity_type", "_sort_key"),
+			WithEndpoint(dbEndpoint),
+		)
+	}
+	return NewClient(
 		WithRegion("ap-northeast-1"),
 		WithPartitionKey("_partition_key"),
 		WithSortKey("_sort_key"),
+		WithKeySeparator(keySeparator),
 		WithGSI("gsi-name", "_entity_type", "_sort_key"),
 		WithEndpoint(dbEndpoint),
 	)
-
-	return db, err
 }
 
 // function to generate random uuid
@@ -172,8 +184,18 @@ func get(t *testing.T, db *Client, PK string, SK string) dataItem {
 	return data
 }
 
-func removeItem(t *testing.T, db *Client, PK, SK string) {
-	err := db.
+func removeItems(t *testing.T, gIds []string, SK string) {
+	for _, gId := range gIds {
+		removeItem(t, gId, SK)
+	}
+}
+
+func removeItem(t *testing.T, PK, SK string) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+	err = db.
 		PK(PK).
 		SK(Equal(SK)).Delete(context.Background())
 	if err != nil {
@@ -181,7 +203,11 @@ func removeItem(t *testing.T, db *Client, PK, SK string) {
 	}
 }
 
-func createItem(t *testing.T, db *Client, count int) []string {
+func createItem(t *testing.T, withTable bool, count int) []string {
+	db, err := getClient(blank, withTable)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
 	gIds := make([]string, 0)
 	SK := "current"
 
@@ -208,7 +234,11 @@ func createItem(t *testing.T, db *Client, count int) []string {
 	return gIds
 }
 
-func createItemWithPrefix(t *testing.T, db *Client, count int, prefix string) []string {
+func createItemWithPrefix(t *testing.T, withTable bool, count int, prefix string, separator string) []string {
+	db, err := getClient(separator, withTable)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
 	gIds := make([]string, 0)
 	SK := "current"
 
@@ -219,7 +249,7 @@ func createItemWithPrefix(t *testing.T, db *Client, count int, prefix string) []
 		newData := dataItem{
 			PK:           PK,
 			SK:           SK,
-			EntityType:   "room",
+			EntityType:   "room" + separator,
 			PhysicalName: fmt.Sprintf("%s%d", prefix, i),
 			LogicalName:  fmt.Sprintf("%s%d", prefix, i),
 		}

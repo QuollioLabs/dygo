@@ -6,12 +6,12 @@ import (
 )
 
 func Test_get_item_happy_path(t *testing.T) {
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
-	gIds := createItem(t, db, 1)
+	gIds := createItem(t, true, 1)
 	SK := "current"
 	PK := gIds[0]
 
@@ -33,16 +33,16 @@ func Test_get_item_happy_path(t *testing.T) {
 	}
 
 	// remove item
-	removeItem(t, db, PK, SK)
+	removeItem(t, PK, SK)
 }
 
 func Test_getauthorized_item_happy_path(t *testing.T) {
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
-	gIds := createItem(t, db, 1)
+	gIds := createItem(t, true, 1)
 	SK := "current"
 	PK := gIds[0]
 
@@ -67,16 +67,16 @@ func Test_getauthorized_item_happy_path(t *testing.T) {
 	}
 
 	// remove item
-	removeItem(t, db, PK, SK)
+	removeItem(t, PK, SK)
 }
 
 func Test_getauthorized_item_not_found(t *testing.T) {
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
-	gIds := createItem(t, db, 1)
+	gIds := createItem(t, true, 1)
 	SK := "current"
 	PK := gIds[0]
 
@@ -94,5 +94,29 @@ func Test_getauthorized_item_not_found(t *testing.T) {
 	}
 
 	// remove item
-	removeItem(t, db, PK, SK)
+	removeItem(t, PK, SK)
+}
+
+func Test_get_item_without_tablename(t *testing.T) {
+	db, err := getClient(blank, false)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	gIds := createItem(t, true, 1)
+	SK := "current"
+	PK := gIds[0]
+
+	d := dataItem{}
+	err = db.
+		PK(PK).
+		SK(Equal(SK)).
+		GetItem(context.Background(), &d)
+	if err == nil {
+		removeItem(t, PK, SK)
+		t.Fatal("expect error for table name, got nil")
+	}
+
+	// remove item
+	removeItem(t, PK, SK)
 }

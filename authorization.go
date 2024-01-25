@@ -49,7 +49,8 @@ func (o *output) Unmarshal(out Out, entityTypes []string) *output {
 	for _, result := range o.Results {
 		switch v := result[o.item.c.gsis[0].partitionKey].(type) {
 		case *types.AttributeValueMemberS:
-			if stringExists(entityTypes, v.Value) {
+			key := getSplittedKey(v.Value, o.item.c.keySeparator)
+			if stringExists(entityTypes, key) {
 				targetAttVals = append(targetAttVals, result)
 			}
 		}

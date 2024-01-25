@@ -9,7 +9,7 @@ import (
 func Test_batchupsert_item_happy_path(t *testing.T) {
 	gId := newPK("room")
 
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
@@ -38,14 +38,14 @@ func Test_batchupsert_item_happy_path(t *testing.T) {
 	// validate item
 	for _, id := range ids {
 		fetchAndValidateItem(t, db, id, "current", true)
-		removeItem(t, db, id, "current")
+		removeItem(t, id, "current")
 	}
 }
 
 func Test_batchupsert_item_invalid_data(t *testing.T) {
 	gId := newPK("room")
 
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}

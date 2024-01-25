@@ -7,13 +7,13 @@ import (
 )
 
 func Test_batchgetauthorized_item_happy_path(t *testing.T) {
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
 	SK := "current"
-	gIds := createItem(t, db, 4)
+	gIds := createItem(t, true, 4)
 	item := new(Item)
 	for _, gId := range gIds {
 		db.PK(gId).SK(Equal(SK)).AddBatchGetItem(item, true)
@@ -37,19 +37,17 @@ func Test_batchgetauthorized_item_happy_path(t *testing.T) {
 		}
 	}
 	// remove item
-	for _, gId := range gIds {
-		removeItem(t, db, gId, SK)
-	}
+	removeItems(t, gIds, SK)
 }
 
 func Test_batchgetauthorized_item_duplicate_keys(t *testing.T) {
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
 	SK := "current"
-	gIds := createItem(t, db, 4)
+	gIds := createItem(t, true, 4)
 	item := new(Item)
 	for _, gId := range gIds {
 		db.PK(gId).SK(Equal(SK)).AddBatchGetItem(item, true)
@@ -74,19 +72,17 @@ func Test_batchgetauthorized_item_duplicate_keys(t *testing.T) {
 		}
 	}
 	// remove item
-	for _, gId := range gIds {
-		removeItem(t, db, gId, SK)
-	}
+	removeItems(t, gIds, SK)
 }
 
 func Test_batchgetauthorized_item_omitEmptyKeys_false(t *testing.T) {
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
 	SK := "current"
-	gIds := createItem(t, db, 2)
+	gIds := createItem(t, true, 2)
 
 	item := new(Item)
 	for i, gId := range gIds {
@@ -101,24 +97,20 @@ func Test_batchgetauthorized_item_omitEmptyKeys_false(t *testing.T) {
 		Unmarshal(&data, []string{"room"}).
 		Run()
 	if err == nil {
-		for _, gId := range gIds {
-			removeItem(t, db, gId, SK)
-		}
+		removeItems(t, gIds, SK)
 		log.Fatal(err)
 	}
-	for _, v := range gIds {
-		removeItem(t, db, v, SK)
-	}
+	removeItems(t, gIds, SK)
 }
 
 func Test_batchget_item_happy_path(t *testing.T) {
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
 	SK := "current"
-	gIds := createItem(t, db, 4)
+	gIds := createItem(t, true, 4)
 
 	item := new(Item)
 	for _, gId := range gIds {
@@ -136,19 +128,17 @@ func Test_batchget_item_happy_path(t *testing.T) {
 		}
 	}
 	// remove item
-	for _, gId := range gIds {
-		removeItem(t, db, gId, SK)
-	}
+	removeItems(t, gIds, SK)
 }
 
 func Test_batchget_item_omitEmptyKeys_false(t *testing.T) {
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
 	SK := "current"
-	gIds := createItem(t, db, 2)
+	gIds := createItem(t, true, 2)
 
 	item := new(Item)
 	for i, gId := range gIds {
@@ -160,12 +150,118 @@ func Test_batchget_item_omitEmptyKeys_false(t *testing.T) {
 
 	_, err = item.BatchGetItem(context.Background(), 10)
 	if err == nil {
-		for _, gId := range gIds {
-			removeItem(t, db, gId, SK)
-		}
+		removeItems(t, gIds, SK)
 		log.Fatal(err)
 	}
-	for _, v := range gIds {
-		removeItem(t, db, v, SK)
+	removeItems(t, gIds, SK)
+}
+
+func Test_batchget_item_without_tablename_happy_path(t *testing.T) {
+	db, err := getClient(blank, false)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
 	}
+
+	SK := "current"
+	gIds := createItem(t, true, 4)
+
+	item := new(Item)
+	for _, gId := range gIds {
+		db.Table("test-table-1").PK(gId).SK(Equal(SK)).AddBatchGetItem(item, true)
+	}
+
+	output, err := item.BatchGetItem(context.Background(), 10)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if output != nil {
+		if len(output) != len(gIds) {
+			t.Fatalf("expected %v items but got %v", len(gIds), len(output))
+		}
+	}
+	// remove item
+	removeItems(t, gIds, SK)
+}
+
+func Test_batchget_item_without_tablename(t *testing.T) {
+	db, err := getClient(blank, false)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	SK := "current"
+	gIds := createItem(t, true, 4)
+
+	item := new(Item)
+	for _, gId := range gIds {
+		db.PK(gId).SK(Equal(SK)).AddBatchGetItem(item, true)
+	}
+
+	_, err = item.BatchGetItem(context.Background(), 10)
+	if err == nil {
+		log.Fatal("error expected")
+	}
+
+	// remove item
+	removeItems(t, gIds, SK)
+}
+
+func Test_batchget_item_omitEmptyKeys_true(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	SK := "current"
+	gIds := createItem(t, true, 2)
+
+	item := new(Item)
+	for i, gId := range gIds {
+		if i%2 == 0 {
+			gId = ""
+		}
+		db.PK(gId).SK(Equal(SK)).AddBatchGetItem(item, true)
+	}
+
+	out, err := item.BatchGetItem(context.Background(), 10)
+	if err != nil {
+		removeItems(t, gIds, SK)
+		log.Fatalf("unexpected error : %v", err)
+	}
+
+	if out != nil {
+		if len(out) != 1 {
+			removeItems(t, gIds, SK)
+			t.Fatalf("expected 1 item but got %v", len(out))
+		}
+	}
+
+	removeItems(t, gIds, SK)
+}
+
+func Test_batchget_item_omitEmptyKeys_true_without_tablename(t *testing.T) {
+	db, err := getClient(blank, false)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	SK := "current"
+	gIds := createItem(t, true, 2)
+
+	item := new(Item)
+	for i, gId := range gIds {
+		if i%2 == 0 {
+			gId = ""
+		}
+		db.PK(gId).SK(Equal(SK)).AddBatchGetItem(item, true)
+	}
+
+	_, err = item.BatchGetItem(context.Background(), 10)
+	if err == nil {
+		removeItems(t, gIds, SK)
+		log.Fatal("expected error")
+	}
+
+	removeItems(t, gIds, SK)
 }

@@ -6,12 +6,12 @@ import (
 )
 
 func Test_delete_item(t *testing.T) {
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
-	gIds := createItem(t, db, 1)
+	gIds := createItem(t, true, 1)
 	SK := "current"
 	PK := gIds[0]
 

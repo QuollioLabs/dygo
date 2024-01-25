@@ -29,6 +29,9 @@ const (
 //		log.Fatal(err)
 //	}
 func (i *Item) BatchDeleteItem(ctx context.Context, threadCount int) error {
+	if i.err != nil {
+		return i.err
+	}
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(threadCount)
 

@@ -7,7 +7,7 @@ import (
 )
 
 func Test_create_item_happy_path(t *testing.T) {
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
@@ -35,11 +35,11 @@ func Test_create_item_happy_path(t *testing.T) {
 	fetchAndValidateItem(t, db, PK, SK, true)
 
 	// remove item
-	removeItem(t, db, PK, SK)
+	removeItem(t, PK, SK)
 }
 
 func Test_create_item_invalid_data(t *testing.T) {
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}

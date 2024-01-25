@@ -56,7 +56,10 @@ func (c *Client) partition(key string, value any) *Item {
 		key:          k,
 		keyCondition: expression.KeyEqual(expression.Key(key), expression.Value(value.(string))),
 	}
-	item.err = item.validate("PK", value)
+	item.err = item.validate("TableName", c.tableName)
+	if item.err == nil {
+		item.err = item.validate("PK", value)
+	}
 	return &item
 }
 
@@ -81,7 +84,7 @@ func (i *Item) buildFilter(attributeName string, f FilterFunc) *Item {
 // buildAndFilter builds and filters the Item based on the provided attributeName and FilterFunc.
 // It returns the modified Item after applying the filter.
 func (i *Item) buildAndFilter(attributeName string, f FilterFunc) *Item {
-	if !i.filter.IsSet() {
+	if !i.filter.IsSet() && i.err == nil {
 		i.err = i.validate("FilterAnd", none)
 		return i
 	}
@@ -92,6 +95,10 @@ func (i *Item) buildAndFilter(attributeName string, f FilterFunc) *Item {
 
 // buildOrFilter builds and adds an OR filter condition to the Item's filter.
 func (i *Item) buildOrFilter(attributeName string, f FilterFunc) *Item {
+	if !i.filter.IsSet() && i.err == nil {
+		i.err = i.validate("FilterOr", none)
+		return i
+	}
 	condition := f(attributeName)
 	i.filter = i.filter.Or(condition)
 	return i
@@ -157,10 +164,12 @@ func (c *Client) secondaryIndex(indexName string, partitionKeyValue any, f SortK
 			item.indexName = indexName
 			item.keyCondition = keyCondition
 			item.useGSI = true
-			return item
 		}
 	}
-	item.err = item.validate("GSI", none)
+	item.err = item.validate("TableName", c.tableName)
+	if item.err == nil {
+		item.err = item.validate("GSI", none)
+	}
 	return item
 }
 
