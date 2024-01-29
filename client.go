@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/smithy-go/logging"
 )
 
@@ -27,6 +28,7 @@ type Client struct {
 	endpoint     string
 	maxRetry     int
 	logger       *log.Logger
+	keySeparator string
 }
 
 // GSI is a struct that represents a Global Secondary Index (GSI) for the client.
@@ -62,6 +64,15 @@ func WithPartitionKey(key string) Option {
 func WithSortKey(key string) Option {
 	return func(c *Client) error {
 		c.sortKey = key
+		return nil
+	}
+}
+
+// WithKeySeparator sets the key separator for the client.
+// The key separator is used to separate different parts of partition key in the client.
+func WithKeySeparator(separator string) Option {
+	return func(c *Client) error {
+		c.keySeparator = separator
 		return nil
 	}
 }
@@ -284,10 +295,12 @@ func (i *Item) SK(f SortKeyFunc) *Item {
 //		SK(dygo.Equal("sk")).
 //		GetItem(context.Background(), &emp)
 func (c *Client) Item(item ItemData) *Item {
-	return &Item{
+	i := &Item{
 		c:    c,
 		item: item,
 	}
+	i.err = i.validate("TableName", c.tableName)
+	return i
 }
 
 // Project sets the projection for the item.
@@ -360,11 +373,29 @@ func (i *Item) OrFilter(attributeName string, filterFunc FilterFunc) *Item {
 //	 }
 //	 output, err := item.BatchGetItem(context.Background(), 10)
 func (i *Item) AddBatchGetItem(newItem *Item, omitEmptyKeys bool) {
-	if omitEmptyKeys && i.err != nil {
+	if omitEmptyKeys && i.isPartitionKeyEmpty() {
 		return
+	} else {
+		if i.err != nil {
+			newItem.err = i.err
+			return
+		}
 	}
 	i.fillItem(newItem)
 	newItem.addBatchGetItem()
+}
+
+// isPartitionKeyEmpty checks if the partition key of the item is empty.
+func (i *Item) isPartitionKeyEmpty() bool {
+	if pk, ok := i.key[i.c.partitionKey]; ok {
+		switch v := pk.(type) {
+		case *types.AttributeValueMemberS:
+			if v.Value == "" {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // AddBatchDeleteItem adds a new item to the batch delete list.
@@ -377,6 +408,10 @@ func (i *Item) AddBatchGetItem(newItem *Item, omitEmptyKeys bool) {
 //	 }
 //	 err = item.BatchDeleteItem(context.Background(), 10)
 func (i *Item) AddBatchDeleteItem(newItem *Item) {
+	if i.err != nil {
+		newItem.err = i.err
+		return
+	}
 	i.fillItem(newItem)
 	newItem.addBatchDeleteItem()
 }

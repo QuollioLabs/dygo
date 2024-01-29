@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
@@ -59,6 +60,16 @@ func (i *Item) validate(key string, value any) error {
 		return i.validateFilterAnd(value)
 	case "FilterOr":
 		return i.validateFilterOr(value)
+	case "TableName":
+		return i.validateTableName(value)
+	}
+	return nil
+}
+
+// validateTableName checks if the provided table name is empty.
+func (i *Item) validateTableName(value any) error {
+	if value == "" {
+		return dynamoError().method("TableName").message("table name can't be empty")
 	}
 	return nil
 }
@@ -75,7 +86,16 @@ func (i *Item) validateFilterAnd(value any) error {
 
 // validateGSI validates the Global Secondary Index (GSI) value.
 func (i *Item) validateGSI(value any) error {
-	return dynamoError().method("GSI").message("unsupported GSI")
+	found := false
+	for _, gsi := range i.c.gsis {
+		if gsi.indexName == i.indexName {
+			found = true
+		}
+	}
+	if !found {
+		return dynamoError().method("GSI").message("invalid GSI name")
+	}
+	return nil
 }
 
 // validatePartitionKey checks if the provided partition key value is empty.
@@ -148,4 +168,11 @@ func stringExists(s []string, str string) bool {
 		}
 	}
 	return false
+}
+
+func getSplittedKey(key string, separator string) string {
+	if separator != "" {
+		return strings.Split(key, separator)[0]
+	}
+	return key
 }

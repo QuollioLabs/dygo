@@ -8,12 +8,12 @@ import (
 
 func Test_queryauthorize_item(t *testing.T) {
 
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
-	gIds := createItem(t, db, 5)
+	gIds := createItem(t, true, 5)
 	SK := "current"
 	PK := gIds[0]
 	var data dataSlice
@@ -22,7 +22,7 @@ func Test_queryauthorize_item(t *testing.T) {
 		PK(PK).
 		SK(BeginsWith("current")).
 		Project("_partition_key", "_entity_type", "_sort_key").
-		QueryAuthorizeItem(context.Background()).
+		Query(context.Background()).
 		Unmarshal(&data, []string{"room"}).
 		Run()
 
@@ -40,54 +40,18 @@ func Test_queryauthorize_item(t *testing.T) {
 	}
 	// remove item
 	for _, v := range gIds {
-		removeItem(t, db, v, SK)
-	}
-}
-
-func Test_query_item(t *testing.T) {
-
-	db, err := getClient()
-	if err != nil {
-		t.Fatalf("unexpected error : %v", err)
-	}
-
-	gIds := createItem(t, db, 5)
-	SK := "current"
-	PK := gIds[0]
-	var items []dataItem
-
-	err = db.
-		PK(PK).
-		SK(BeginsWith("current")).
-		Project("_partition_key", "_entity_type", "_sort_key").
-		Query(context.Background(), &items)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, d := range items {
-		if exist := stringExists(gIds, d.PK); !exist {
-			t.Fatalf("expected _partition_key : %v not found", d.PK)
-		}
-	}
-	if len(items) != 1 {
-		t.Fatalf("expected 1 items but got %v", len(items))
-	}
-	// remove item
-	for _, v := range gIds {
-		removeItem(t, db, v, SK)
+		removeItem(t, v, SK)
 	}
 }
 
 func Test_queryauthorize_with_gsi(t *testing.T) {
-	db, err := getClient()
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, db, 5, prefix)
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
 	SK := "current"
 	var data dataSlice
 
@@ -98,7 +62,7 @@ func Test_queryauthorize_with_gsi(t *testing.T) {
 		Project("_partition_key", "_entity_type", "_sort_key", "physical_name", "logical_name").
 		// Limit(2).
 		// LastEvaluatedKey(lek).
-		QueryAuthorizeItem(context.Background()).
+		Query(context.Background()).
 		Unmarshal(&data, []string{"room"}).
 		Run()
 
@@ -116,44 +80,128 @@ func Test_queryauthorize_with_gsi(t *testing.T) {
 	}
 	// remove item
 	for _, v := range gIds {
-		removeItem(t, db, v, SK)
+		removeItem(t, v, SK)
 	}
 }
 
-func Test_query_with_gsi(t *testing.T) {
-	db, err := getClient()
+func Test_query_with_gsi_invalidandfilter(t *testing.T) {
+	db, err := getClient(blank, true)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, db, 5, prefix)
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
 	SK := "current"
-	var data []dataItem
+	var data dataSlice
 
 	err = db.
 		GSI("gsi-name", "room", Equal("current")).
+		AndFilter("logical_name", KeyBeginsWith(prefix)).
+		Project("_partition_key", "_entity_type", "_sort_key", "physical_name", "logical_name").
+		Query(context.Background()).
+		Unmarshal(&data, []string{"room"}).
+		Run()
+
+	if err == nil {
+		log.Fatal("error expected for invalid And filter")
+	}
+
+	// remove item
+	removeItems(t, gIds, SK)
+}
+
+func Test_query_with_gsi_invalidorfilter(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	prefix := "name_test_"
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	SK := "current"
+	var data dataSlice
+
+	err = db.
+		GSI("gsi-name", "room", Equal("current")).
+		OrFilter("logical_name", KeyBeginsWith(prefix)).
+		Project("_partition_key", "_entity_type", "_sort_key", "physical_name", "logical_name").
+		Query(context.Background()).
+		Unmarshal(&data, []string{"room"}).
+		Run()
+
+	if err == nil {
+		log.Fatal("error expected for invalid Or filter")
+	}
+
+	// remove item
+	removeItems(t, gIds, SK)
+}
+
+func Test_query_with_gsi_without_tablename(t *testing.T) {
+	db, err := getClient(blank, false)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	prefix := "name_test_"
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	SK := "current"
+	var data dataSlice
+
+	err = db.
+		GSI("gsi-name", "room", Equal("current")).
+		Query(context.Background()).
+		Unmarshal(&data, []string{"room"}).
+		Run()
+
+	if err == nil {
+		removeItems(t, gIds, SK)
+		t.Fatal("expect error for table name, got nil")
+	}
+
+	removeItems(t, gIds, SK)
+}
+
+func Test_query_with_keyseparator(t *testing.T) {
+	separator := "#"
+	db, err := getClient(separator, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	prefix := "name_test_"
+	gIds := createItemWithPrefix(t, true, 5, prefix, separator)
+	SK := "current"
+	var data dataSlice
+
+	err = db.
+		GSI("gsi-name", "room"+separator, Equal("current")).
 		Filter("physical_name", KeyBeginsWith(prefix)).
 		AndFilter("logical_name", KeyBeginsWith(prefix)).
 		Project("_partition_key", "_entity_type", "_sort_key", "physical_name", "logical_name").
-		// Limit(2).
-		// LastEvaluatedKey(lek).
-		Query(context.Background(), &data)
+		Query(context.Background()).
+		Unmarshal(&data, []string{"room"}).
+		Run()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, d := range data {
+		if d.EntityType != "room"+separator {
+			removeItems(t, gIds, SK)
+			t.Fatalf("_entity_type mismatch, expected table#1 got: %v", d.EntityType)
+		}
 		if exist := stringExists(gIds, d.PK); !exist {
+			removeItems(t, gIds, SK)
 			t.Fatalf("expected _partition_key : %v not found", d.PK)
 		}
 	}
 	if len(data) != 5 {
+		removeItems(t, gIds, SK)
 		t.Fatalf("expected 1 items but got %v", len(data))
 	}
 	// remove item
-	for _, v := range gIds {
-		removeItem(t, db, v, SK)
-	}
+	removeItems(t, gIds, SK)
 }

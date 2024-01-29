@@ -24,6 +24,9 @@ const opBatchGet = "BatchGet"
 //
 //	output, err := item.BatchGetItem(context.Background(), 10)
 func (i *Item) BatchGetItem(ctx context.Context, threadCount int) ([]map[string]types.AttributeValue, error) {
+	if i.err != nil {
+		return nil, i.err
+	}
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(threadCount)
 
@@ -67,6 +70,9 @@ func (i *Item) BatchGetItem(ctx context.Context, threadCount int) ([]map[string]
 //		Run()
 func (i *Item) BatchGetAuthorizedItem(ctx context.Context, threadCount int) *output {
 	result := newOutput(i, ctx)
+	if i.err != nil {
+		result.item.err = i.err
+	}
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(threadCount)
 

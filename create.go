@@ -28,6 +28,9 @@ const opCreate = "Create"
 //
 // Important : dataItem must implement Validate() method.
 func (i *Item) Create(ctx context.Context) error {
+	if i.err != nil {
+		return i.err
+	}
 	av, err := marshalMapUsingJSONTags(i.item)
 	if err != nil {
 		return dynamoError().method(opCreate).message(err.Error())
