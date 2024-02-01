@@ -207,6 +207,111 @@ func Test_query_with_keyseparator(t *testing.T) {
 	removeItems(t, gIds, SK)
 }
 
+func Test_query_with_filter_keycontains(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	prefix := "name_test_"
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	SK := "current"
+	var data dataSlice
+
+	err = db.
+		GSI("gsi-name", "room", Equal("current")).
+		Filter("physical_name", KeyContains("0")).
+		Project("_partition_key", "_entity_type", "_sort_key", "physical_name", "logical_name").
+		Query(context.Background()).
+		Unmarshal(&data, []string{"room"}).
+		Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, d := range data {
+		if exist := stringExists(gIds, d.PK); !exist {
+			t.Fatalf("expected _global_id : %v not found", d.PK)
+		}
+	}
+	if len(data) != 1 {
+		t.Fatalf("expected 1 items but got %v", len(data))
+	}
+	// remove item
+	removeItems(t, gIds, SK)
+}
+
+func Test_query_with_filter_keynotcontains(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	prefix := "name_test_"
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	SK := "current"
+	var data dataSlice
+
+	err = db.
+		GSI("gsi-name", "room", Equal("current")).
+		Filter("physical_name", KeyNotContains("0")).
+		Project("_partition_key", "_entity_type", "_sort_key", "physical_name", "logical_name").
+		Query(context.Background()).
+		Unmarshal(&data, []string{"room"}).
+		Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, d := range data {
+		if exist := stringExists(gIds, d.PK); !exist {
+			t.Fatalf("expected _global_id : %v not found", d.PK)
+		}
+	}
+	if len(data) != 4 {
+		t.Fatalf("expected 4 items but got %v", len(data))
+	}
+	// remove item
+	removeItems(t, gIds, SK)
+}
+
+func Test_query_with_filter_keyin(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	prefix := "name_test_"
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	SK := "current"
+	var data dataSlice
+
+	err = db.
+		GSI("gsi-name", "room", Equal("current")).
+		Filter("physical_name", KeyIn("name_test_0, name_test_1")).
+		Project("_partition_key", "_entity_type", "_sort_key", "physical_name", "logical_name").
+		Query(context.Background()).
+		Unmarshal(&data, []string{"room"}).
+		Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, d := range data {
+		if exist := stringExists(gIds, d.PK); !exist {
+			t.Fatalf("expected _global_id : %v not found", d.PK)
+		}
+	}
+	if len(data) != 2 {
+		t.Fatalf("expected 2 items but got %v", len(data))
+	}
+	// remove item
+	removeItems(t, gIds, SK)
+}
+
 func Test_query_with_filter_scanindexforward(t *testing.T) {
 	db, err := getClient(blank, true)
 	if err != nil {
