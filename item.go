@@ -38,6 +38,7 @@ type keys struct {
 type pagination struct {
 	lastEvaluatedKey map[string]types.AttributeValue
 	limit            int32
+	desc             bool
 }
 
 const (

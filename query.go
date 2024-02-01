@@ -51,6 +51,10 @@ func (i *Item) Query(ctx context.Context) *output {
 		input.IndexName = aws.String(i.indexName)
 	}
 
+	if i.pagination.desc {
+		input.ScanIndexForward = aws.Bool(false)
+	}
+
 	if i.pagination.limit > 0 {
 		input.Limit = aws.Int32(i.pagination.limit)
 		out, err := i.querySinglePage(ctx, &input, result)

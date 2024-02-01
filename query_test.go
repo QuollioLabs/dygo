@@ -2,6 +2,7 @@ package dygo
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"testing"
 )
@@ -204,4 +205,47 @@ func Test_query_with_keyseparator(t *testing.T) {
 	}
 	// remove item
 	removeItems(t, gIds, SK)
+}
+
+func Test_query_with_filter_scanindexforward(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	prefix := "name_test_"
+	gIds := createItemWithVaringSortKey(t, true, 5, prefix, blank)
+	var data dataSlice
+
+	err = db.
+		GSI("gsi-name", "room", BeginsWith("current")).
+		Project("_partition_key", "_entity_type", "_sort_key", "physical_name", "logical_name").
+		ScanIndexForward(true).
+		Query(context.Background()).
+		Unmarshal(&data, []string{"room"}).
+		Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for i := 0; i < len(data); i++ {
+		sk := fmt.Sprintf("current_%d", len(data)-1-i)
+		if data[i].SK != sk {
+			t.Fatalf("expected _sort_key : %v not found", sk)
+		}
+	}
+
+	for _, d := range data {
+		if exist := stringExists(gIds, d.PK); !exist {
+			t.Fatalf("expected _partition_key : %v not found", d.PK)
+		}
+	}
+	if len(data) != 5 {
+		t.Fatalf("expected 5 items but got %v", len(data))
+	}
+	// remove item
+	for _, d := range data {
+		removeItem(t, d.PK, d.SK)
+	}
 }

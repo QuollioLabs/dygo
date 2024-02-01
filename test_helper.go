@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 
@@ -103,7 +104,7 @@ func (d *dataItem) isValidEntityType() ozzo.RuleFunc {
 func (d *dataItem) isValidSK() ozzo.RuleFunc {
 	return func(value interface{}) error {
 		switch {
-		case d.SK == "current":
+		case strings.Contains(d.SK, "current"):
 		default:
 			return fmt.Errorf("invalid SK '%s' for the model", d.SK)
 		}
@@ -249,6 +250,36 @@ func createItemWithPrefix(t *testing.T, withTable bool, count int, prefix string
 		newData := dataItem{
 			PK:           PK,
 			SK:           SK,
+			EntityType:   "room" + separator,
+			PhysicalName: fmt.Sprintf("%s%d", prefix, i),
+			LogicalName:  fmt.Sprintf("%s%d", prefix, i),
+		}
+
+		err := db.
+			Item(newData).
+			Create(context.Background())
+
+		if err != nil {
+			t.Fatalf("unexpected error in creating item : %v", err)
+		}
+	}
+	return gIds
+}
+
+func createItemWithVaringSortKey(t *testing.T, withTable bool, count int, prefix string, separator string) []string {
+	db, err := getClient(separator, withTable)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+	gIds := make([]string, 0)
+
+	for i := 0; i < count; i++ {
+		PK := newPK("room")
+		gIds = append(gIds, PK)
+
+		newData := dataItem{
+			PK:           PK,
+			SK:           fmt.Sprintf("current_%v", i),
 			EntityType:   "room" + separator,
 			PhysicalName: fmt.Sprintf("%s%d", prefix, i),
 			LogicalName:  fmt.Sprintf("%s%d", prefix, i),
