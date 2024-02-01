@@ -279,6 +279,22 @@ func (i *Item) SK(f SortKeyFunc) *Item {
 	return i.sort(i.c.sortKey, f)
 }
 
+// ScanIndexForward sets the flag indicating whether the scan operation should be performed in ascending order.
+// If value is true, the scan will be performed in ascending order. If value is false, the scan will be performed in descending order.
+//
+// Example:
+//
+//	 err = db.
+//		GSI("gsi-name", "room", dygo.Equal("current")).
+//		ScanIndexForward(true).
+//		Query(context.Background()).
+//		Unmarshal(&data, []string{"room"}).
+//		Run()
+func (i *Item) ScanIndexForward(value bool) *Item {
+	i.pagination.desc = value
+	return i
+}
+
 // Item returns a new instance of the Item struct, initialized with the provided item and client.
 // item must implement method : Validate() error
 //
