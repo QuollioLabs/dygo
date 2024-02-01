@@ -176,3 +176,11 @@ func getSplittedKey(key string, separator string) string {
 	}
 	return key
 }
+
+func getStringValue(key interface{}) string {
+	switch k := key.(type) {
+	case string:
+		return k
+	}
+	return ""
+}

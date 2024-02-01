@@ -1,6 +1,10 @@
 package dygo
 
-import "github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+import (
+	"strings"
+
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
+)
 
 // FilterFunc returns a condition builder for a key.
 type FilterFunc func(string) expression.ConditionBuilder
@@ -67,7 +71,14 @@ func KeyNotEqual(value any) FilterFunc {
 // KeyContains returns a FilterFunc that checks if the given value is contained in the key's value.
 func KeyContains(value any) FilterFunc {
 	return func(keyName string) expression.ConditionBuilder {
-		return expression.Name(keyName).Contains(expression.Value(value))
+		return expression.Name(keyName).Contains(value)
+	}
+}
+
+// KeyNotContains returns a FilterFunc that filters out items where the value of the specified key does not contain the given value.
+func KeyNotContains(value any) FilterFunc {
+	return func(keyName string) expression.ConditionBuilder {
+		return expression.Name(keyName).Contains(value).Not()
 	}
 }
 
@@ -88,6 +99,18 @@ func KeyNull() FilterFunc {
 // KeyIn returns a FilterFunc that checks if the given value is present in the specified keyName.
 func KeyIn(value any) FilterFunc {
 	return func(keyName string) expression.ConditionBuilder {
-		return expression.Name(keyName).In(expression.Value(value))
+		csv := getStringValue(value)
+		if csv != "" {
+			// Split the comma-separated string into a slice of values.
+			values := strings.Split(csv, ",")
+			// Create a slice of OperandBuilders from the values.
+			operands := make([]expression.OperandBuilder, len(values))
+			for i, v := range values {
+				operands[i] = expression.Value(strings.TrimSpace(v))
+			}
+			// Return the ConditionBuilder with the IN condition for the keyName.
+			return expression.Name(keyName).In(operands[0], operands[1:]...)
+		}
+		return expression.Name(keyName).In(expression.Value(csv))
 	}
 }
