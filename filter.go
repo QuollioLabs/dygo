@@ -71,14 +71,14 @@ func KeyNotEqual(value any) FilterFunc {
 // KeyContains returns a FilterFunc that checks if the given value is contained in the key's value.
 func KeyContains(value any) FilterFunc {
 	return func(keyName string) expression.ConditionBuilder {
-		return expression.Name(keyName).Contains(value)
+		return expression.Name(keyName).Contains(getStringValue(value))
 	}
 }
 
 // KeyNotContains returns a FilterFunc that filters out items where the value of the specified key does not contain the given value.
 func KeyNotContains(value any) FilterFunc {
 	return func(keyName string) expression.ConditionBuilder {
-		return expression.Name(keyName).Contains(value).Not()
+		return expression.Name(keyName).Contains(getStringValue(value)).Not()
 	}
 }
 

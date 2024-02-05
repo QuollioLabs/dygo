@@ -181,6 +181,8 @@ func getStringValue(key interface{}) string {
 	switch k := key.(type) {
 	case string:
 		return k
+	case int:
+		return strconv.Itoa(k)
 	}
 	return ""
 }

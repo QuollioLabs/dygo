@@ -99,10 +99,10 @@ func (i *Item) fetchBatch(ctx context.Context, batch map[string]types.KeysAndAtt
 		RequestItems: batch,
 	}
 
-	paginator := dynamodb.NewBatchGetItemPaginator(i.c.client, input)
+	paginator := newBatchGetItemPaginator(i.c.client, input)
 
-	for paginator.HasMorePages() {
-		page, err := paginator.NextPage(ctx)
+	for paginator.hasMorePages() {
+		page, err := paginator.nextPage(ctx)
 		if err != nil {
 			return dynamoError().method(opBatchGet).message(err.Error())
 		}
