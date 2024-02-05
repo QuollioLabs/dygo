@@ -265,3 +265,39 @@ func Test_batchget_item_omitEmptyKeys_true_without_tablename(t *testing.T) {
 
 	removeItems(t, gIds, SK)
 }
+
+func Test_batchgetauthorized_item_withpages_happy_path(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	SK := "current"
+	// create 300 items
+	gIds := createItem(t, true, 300)
+	item := new(Item)
+	for _, gId := range gIds {
+		db.PK(gId).SK(Equal(SK)).AddBatchGetItem(item, true)
+	}
+
+	var data dataSlice
+	err = item.BatchGetAuthorizedItem(context.Background(), 10).
+		Unmarshal(&data, []string{"room"}).
+		Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// BatchGetAuthorizedItem should return 300 items
+	if len(data) != len(gIds) {
+		t.Fatalf("expected %v items but got %v", len(gIds), len(data))
+	}
+
+	for _, d := range data {
+		if exist := stringExists(gIds, d.PK); !exist {
+			t.Fatalf("expected _partition_key : %v not found", d.PK)
+		}
+	}
+	// remove item
+	removeItems(t, gIds, SK)
+}
