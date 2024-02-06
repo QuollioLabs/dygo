@@ -26,7 +26,7 @@ func (i *Item) Upsert(ctx context.Context) error {
 
 	av, err := attributevalue.MarshalMap(i.item)
 	if err != nil {
-		return err
+		return dynamoError().method(opUpsert).message(err.Error())
 	}
 
 	input := dynamodb.PutItemInput{

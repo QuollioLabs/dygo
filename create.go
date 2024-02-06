@@ -35,7 +35,7 @@ func (i *Item) Create(ctx context.Context) error {
 
 	av, err := attributevalue.MarshalMap(i.item)
 	if err != nil {
-		return err
+		return dynamoError().method(opCreate).message(err.Error())
 	}
 
 	err = i.item.Validate()
