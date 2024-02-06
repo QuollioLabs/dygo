@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"testing"
+	"time"
 )
 
 func Test_batchupsert_item_happy_path(t *testing.T) {
@@ -23,6 +24,8 @@ func Test_batchupsert_item_happy_path(t *testing.T) {
 			PhysicalName: "physical_name_1145",
 			LogicalName:  "logical_name_1145",
 			EntityType:   "room",
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
 		}
 
 		db.Item(d).AddBatchUpsertItem(newItem)

@@ -1,12 +1,10 @@
 package dygo
 
 import (
-	"encoding/json"
 	"errors"
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
@@ -19,30 +17,6 @@ func createAttributeValue(key interface{}) types.AttributeValue {
 		return &types.AttributeValueMemberN{Value: strconv.Itoa(k)}
 	}
 	return nil
-}
-
-// marshalMapUsingJSONTags marshals the given input interface into a map of DynamoDB attribute values,
-// using JSON tags for serialization. It first converts the input into JSON data, then unmarshals
-// the JSON data into a map[string]interface{}. Finally, it marshals the map into a map[string]types.AttributeValue
-// using the attributevalue.MarshalMap function from the AWS SDK for Go.
-//
-// The input interface should have JSON tags defined on its fields to specify the attribute names in DynamoDB.
-// The resulting map will have the attribute names as keys and the corresponding attribute values as values.
-//
-// If any error occurs during the marshaling process, it will be returned along with a nil map.
-func marshalMapUsingJSONTags(i interface{}) (map[string]types.AttributeValue, error) {
-	jsonData, err := json.Marshal(i)
-	if err != nil {
-		return nil, err
-	}
-
-	var jsonMap map[string]interface{}
-	err = json.Unmarshal(jsonData, &jsonMap)
-	if err != nil {
-		return nil, err
-	}
-
-	return attributevalue.MarshalMap(jsonMap)
 }
 
 // validate validates the given key and value.
