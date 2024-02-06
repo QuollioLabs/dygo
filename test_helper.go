@@ -16,12 +16,14 @@ const blank = ""
 
 type dataSlice []dataItem
 type dataItem struct {
-	PK           string `json:"_partition_key" dynamodbav:"_partition_key"`
-	SK           string `json:"_sort_key" dynamodbav:"_sort_key"`
-	PhysicalName string `json:"physical_name" dynamodbav:"physical_name"`
-	LogicalName  string `json:"logical_name" dynamodbav:"logical_name"`
-	EntityType   string `json:"_entity_type" dynamodbav:"_entity_type"`
-	IsAuthorized bool   `json:"is_authorized" dynamodbav:"is_authorized"`
+	PK           string    `json:"_partition_key" dynamodbav:"_partition_key"`
+	SK           string    `json:"_sort_key" dynamodbav:"_sort_key"`
+	PhysicalName string    `json:"physical_name" dynamodbav:"physical_name"`
+	LogicalName  string    `json:"logical_name" dynamodbav:"logical_name"`
+	EntityType   string    `json:"_entity_type" dynamodbav:"_entity_type"`
+	IsAuthorized bool      `json:"is_authorized" dynamodbav:"is_authorized"`
+	CreatedAt    time.Time `json:"_created_at" dynamodbav:"_created_at"`
+	UpdatedAt    time.Time `json:"_updated_at" dynamodbav:"_updated_at"`
 }
 
 func (d dataItem) Validate() error {

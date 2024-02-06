@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"testing"
+	"time"
 )
 
 func Test_create_item_happy_path(t *testing.T) {
@@ -21,6 +22,8 @@ func Test_create_item_happy_path(t *testing.T) {
 		EntityType:   "room",
 		PhysicalName: "physical_name_11",
 		LogicalName:  "logical_name_11",
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
 	err = db.

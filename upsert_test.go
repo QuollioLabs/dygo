@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"testing"
+	"time"
 )
 
 func Test_upsert_item(t *testing.T) {
@@ -22,6 +23,8 @@ func Test_upsert_item(t *testing.T) {
 		EntityType:   "room",
 		PhysicalName: "updated",
 		LogicalName:  "updated",
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
 	}
 
 	err = db.

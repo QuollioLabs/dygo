@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
@@ -31,7 +32,8 @@ func (i *Item) Create(ctx context.Context) error {
 	if i.err != nil {
 		return i.err
 	}
-	av, err := marshalMapUsingJSONTags(i.item)
+
+	av, err := attributevalue.MarshalMap(i.item)
 	if err != nil {
 		return dynamoError().method(opCreate).message(err.Error())
 	}
