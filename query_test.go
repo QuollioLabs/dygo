@@ -354,3 +354,49 @@ func Test_query_with_filter_scanindexforward(t *testing.T) {
 		removeItem(t, d.PK, d.SK)
 	}
 }
+
+func Test_queryauthorize_with_gsi_limit(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	prefix := "name_test_"
+	gIds := createItemWithPrefix(t, true, 15, prefix, blank)
+	SK := "current"
+	limit := 2
+	var data dataSlice
+	lek := map[string]any{}
+
+	for {
+		err = db.
+			GSI("gsi-name", "room", Equal("current")).
+			Filter("_partition_key", KeyBeginsWith("rm")).
+			AndFilter("logical_name", KeyBeginsWith(prefix)).
+			Project("_partition_key", "_entity_type", "_sort_key", "physical_name", "logical_name").
+			Limit(limit).
+			ScanIndexForward(true).
+			LastEvaluatedKey(lek).
+			Query(context.Background()).
+			Unmarshal(&data, []string{"room"}).
+			Run()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if len(data) > limit {
+			t.Fatalf("expected %v items but got %v", limit, len(data))
+		}
+
+		lek = getLastKey(data)
+		if len(data) < limit {
+			break
+		}
+	}
+
+	// remove item
+	for _, v := range gIds {
+		removeItem(t, v, SK)
+	}
+}
