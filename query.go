@@ -59,7 +59,6 @@ func (i *Item) Query(ctx context.Context) *output {
 	}
 
 	if i.pagination.limit > 0 {
-		input.Limit = aws.Int32(i.pagination.limit)
 		out, err := i.querySinglePage(ctx, &input, result)
 		if err != nil {
 			result.item.err = err
@@ -75,7 +74,6 @@ func (i *Item) Query(ctx context.Context) *output {
 
 // querySinglePage queries a single page of items from DynamoDB using the provided input.
 func (i *Item) querySinglePage(ctx context.Context, input *dynamodb.QueryInput, result *output) (*output, error) {
-
 	output, err := i.c.client.Query(ctx, input)
 	if err != nil {
 		if err := getDynamoDBError(opQuery, err); err != nil {
@@ -83,7 +81,15 @@ func (i *Item) querySinglePage(ctx context.Context, input *dynamodb.QueryInput, 
 		}
 		return nil, dynamoError().method(opQuery).message(err.Error())
 	}
-	result.Results = append(result.Results, output.Items...)
+	// fetch with pagination
+	if i.pagination.limit > 0 {
+		if len(output.Items) >= int(i.pagination.limit) {
+			// if total items is over the page size, limit items
+			result.Results = append(result.Results, output.Items[:i.pagination.limit]...)
+		} else {
+			result.Results = append(result.Results, output.Items...)
+		}
+	}
 	return result, nil
 }
 

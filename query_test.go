@@ -361,18 +361,22 @@ func Test_queryauthorize_with_gsi_limit(t *testing.T) {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
-	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, true, 15, prefix, blank)
+	prefix1 := "name_test_1_"
+	gIds := createItemWithPrefix(t, true, 5000, prefix1, blank)
+
+	prefix2 := "name_test_2_"
+	gIds = append(gIds, createItemWithPrefix(t, true, 150, prefix2, blank)...)
+
 	SK := "current"
-	limit := 2
+	limit := 40
 	var data dataSlice
 	lek := map[string]any{}
 
 	for {
 		err = db.
 			GSI("gsi-name", "room", Equal("current")).
-			Filter("_partition_key", KeyBeginsWith("rm")).
-			AndFilter("logical_name", KeyBeginsWith(prefix)).
+			Filter("physical_name", KeyBeginsWith("name_test_2_")).
+			AndFilter("logical_name", KeyBeginsWith(prefix2)).
 			Project("_partition_key", "_entity_type", "_sort_key", "physical_name", "logical_name").
 			Limit(limit).
 			ScanIndexForward(true).
@@ -396,7 +400,5 @@ func Test_queryauthorize_with_gsi_limit(t *testing.T) {
 	}
 
 	// remove item
-	for _, v := range gIds {
-		removeItem(t, v, SK)
-	}
+	removeItems(t, gIds, SK)
 }
