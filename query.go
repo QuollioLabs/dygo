@@ -21,8 +21,8 @@ const opQuery = "Query"
 //		Filter("physical_name", KeyBeginsWith(prefix)).
 //		AndFilter("logical_name", KeyBeginsWith(prefix)).
 //		Project("_partition_key", "_entity_type", "_sort_key", "physical_name", "logical_name").
-//		// Limit(2).
-//		// LastEvaluatedKey(lek).
+//		Limit(2).
+//		LastEvaluatedKey(lek).
 //		Query(context.Background()).
 //		Unmarshal(&data, []string{"room"}).
 //		Run()
@@ -44,11 +44,14 @@ func (i *Item) Query(ctx context.Context) *output {
 		FilterExpression:          expr.Filter(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
-		ExclusiveStartKey:         i.pagination.lastEvaluatedKey,
 	}
 
 	if i.useGSI {
 		input.IndexName = aws.String(i.indexName)
+	}
+
+	if i.pagination.lastEvaluatedKey != nil && len(i.pagination.lastEvaluatedKey) > 0 {
+		input.ExclusiveStartKey = i.pagination.lastEvaluatedKey
 	}
 
 	if i.pagination.desc {

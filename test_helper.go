@@ -305,3 +305,13 @@ func isAuthorized() bool {
 	// Use the local generator to get a random integer, 0 or 1
 	return r.Intn(2) == 1
 }
+
+func getLastKey(data dataSlice) map[string]any {
+	lek := map[string]any{}
+	if len(data) > 0 {
+		lek["_partition_key"] = data[len(data)-1].PK
+		lek["_sort_key"] = data[len(data)-1].SK
+		lek["_entity_type"] = data[len(data)-1].EntityType
+	}
+	return lek
+}
