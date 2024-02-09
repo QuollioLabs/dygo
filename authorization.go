@@ -47,7 +47,7 @@ func (o *output) Run() error {
 func (o *output) Unmarshal(out Out, entityTypes []string) *output {
 	targetAttVals := []map[string]types.AttributeValue{}
 	for _, result := range o.Results {
-		switch v := result[o.item.c.gsis[0].partitionKey].(type) {
+		switch v := result[getPartitionKey(o.item)].(type) {
 		case *types.AttributeValueMemberS:
 			key := getSplittedKey(v.Value, o.item.c.keySeparator)
 			if stringExists(entityTypes, key) {

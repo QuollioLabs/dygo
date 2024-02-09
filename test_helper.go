@@ -137,6 +137,20 @@ func getClient(keySeparator string, withTable bool) (*Client, error) {
 	)
 }
 
+func getClientMultipleGsi(keySeparator string, withTable bool) (*Client, error) {
+	dbEndpoint := "http://localhost:8000"
+	return NewClient(
+		WithTableName("test-table-2"),
+		WithRegion("ap-northeast-1"),
+		WithPartitionKey("_partition_key"),
+		WithSortKey("_sort_key"),
+		WithKeySeparator(keySeparator),
+		WithGSI("gsi-name", "_entity_type", "_sort_key"),
+		WithGSI("gsi-name2", "_entity_type", "_sort_key"),
+		WithEndpoint(dbEndpoint),
+	)
+}
+
 // function to generate random uuid
 func newPK(prefix string) string {
 	newUUID, err := uuid.NewUUID()
@@ -206,6 +220,19 @@ func removeItem(t *testing.T, PK, SK string) {
 	}
 }
 
+func removeItemMultipleGsi(t *testing.T, PK, SK string) {
+	db, err := getClientMultipleGsi(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+	err = db.
+		PK(PK).
+		SK(Equal(SK)).Delete(context.Background())
+	if err != nil {
+		t.Logf("unexpected error in deleting item: %v", err)
+	}
+}
+
 func createItem(t *testing.T, withTable bool, count int) []string {
 	db, err := getClient(blank, withTable)
 	if err != nil {
@@ -239,6 +266,37 @@ func createItem(t *testing.T, withTable bool, count int) []string {
 
 func createItemWithPrefix(t *testing.T, withTable bool, count int, prefix string, separator string) []string {
 	db, err := getClient(separator, withTable)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+	gIds := make([]string, 0)
+	SK := "current"
+
+	for i := 0; i < count; i++ {
+		PK := newPK("room")
+		gIds = append(gIds, PK)
+
+		newData := dataItem{
+			PK:           PK,
+			SK:           SK,
+			EntityType:   "room" + separator,
+			PhysicalName: fmt.Sprintf("%s%d", prefix, i),
+			LogicalName:  fmt.Sprintf("%s%d", prefix, i),
+		}
+
+		err := db.
+			Item(newData).
+			Create(context.Background())
+
+		if err != nil {
+			t.Fatalf("unexpected error in creating item : %v", err)
+		}
+	}
+	return gIds
+}
+
+func createItemWithPrefixMultipleGsi(t *testing.T, withTable bool, count int, prefix string, separator string) []string {
+	db, err := getClientMultipleGsi(separator, withTable)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}

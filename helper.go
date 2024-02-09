@@ -144,6 +144,7 @@ func stringExists(s []string, str string) bool {
 	return false
 }
 
+// getSplittedKey returns the first part of the key based on the provided separator.
 func getSplittedKey(key string, separator string) string {
 	if separator != "" {
 		return strings.Split(key, separator)[0]
@@ -151,6 +152,7 @@ func getSplittedKey(key string, separator string) string {
 	return key
 }
 
+// getStringValue returns the string value of the provided key.
 func getStringValue(key interface{}) string {
 	switch k := key.(type) {
 	case string:
@@ -159,4 +161,15 @@ func getStringValue(key interface{}) string {
 		return strconv.Itoa(k)
 	}
 	return ""
+}
+
+// getGsiPartitionKey returns the partition key for selected Global Secondary Index (GSI).
+func getPartitionKey(i *Item) string {
+	for _, v := range i.c.gsis {
+		if v.indexName == i.indexName {
+			return v.partitionKey
+		}
+	}
+
+	return i.c.gsis[0].partitionKey
 }
