@@ -2,6 +2,7 @@ package dygo
 
 import (
 	"context"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
@@ -73,5 +74,8 @@ func (i *Item) processBatchDelete(ctx context.Context, batch map[string][]types.
 		batch = result.UnprocessedItems
 		retries++
 	}
+
+	// Simulate a delay to avoid throttling
+	time.Sleep(time.Second * 1)
 	return nil
 }

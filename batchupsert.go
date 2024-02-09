@@ -2,6 +2,7 @@ package dygo
 
 import (
 	"context"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
@@ -76,5 +77,8 @@ func (i *Item) processBatchUpsert(ctx context.Context, batch map[string][]types.
 		batch = result.UnprocessedItems
 		retries++
 	}
+
+	// Sleep for 1 second to avoid throttling
+	time.Sleep(time.Second * 1)
 	return nil
 }
