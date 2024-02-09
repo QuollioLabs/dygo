@@ -402,3 +402,38 @@ func Test_queryauthorize_with_gsi_limit(t *testing.T) {
 	// remove item
 	removeItems(t, gIds, SK)
 }
+
+func Test_queryauthorize_with_multiple_gsi(t *testing.T) {
+	db, err := getClientMultipleGsi(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	prefix := "name_test_"
+	gIds := createItemWithPrefixMultipleGsi(t, true, 5, prefix, blank)
+	SK := "current"
+	var data dataSlice
+
+	err = db.
+		GSI("gsi-name2", "room", Equal("current")).
+		Query(context.Background()).
+		Unmarshal(&data, []string{"room"}).
+		Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, d := range data {
+		if exist := stringExists(gIds, d.PK); !exist {
+			t.Fatalf("expected _partition_key : %v not found", d.PK)
+		}
+	}
+	if len(data) != 5 {
+		t.Fatalf("expected 5 items but got %v", len(data))
+	}
+	// remove item
+	for _, v := range gIds {
+		removeItemMultipleGsi(t, v, SK)
+	}
+}

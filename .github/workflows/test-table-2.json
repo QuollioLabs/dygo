@@ -41,6 +41,22 @@
 			"Projection": {
 				"ProjectionType": "ALL"
 			}
+		},
+		{
+			"IndexName": "gsi-name2",
+			"KeySchema": [
+				{
+					"AttributeName": "_entity_type",
+					"KeyType": "HASH"
+				},
+				{
+					"AttributeName": "_sort_key",
+					"KeyType": "RANGE"
+				}
+			],
+			"Projection": {
+				"ProjectionType": "ALL"
+			}
 		}
 	]
 }
