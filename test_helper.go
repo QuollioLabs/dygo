@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	ozzo "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/google/uuid"
 )
@@ -372,4 +373,21 @@ func getLastKey(data dataSlice) map[string]any {
 		lek["_entity_type"] = data[len(data)-1].EntityType
 	}
 	return lek
+}
+
+func getRawItem(prefix string, count int) ([]map[string]types.AttributeValue, []string) {
+	ids := make([]string, 0)
+	items := make([]map[string]types.AttributeValue, 0)
+	for i := 0; i < count; i++ {
+		gId := newPK("room")
+		ids = append(ids, gId)
+		items = append(items, map[string]types.AttributeValue{
+			"_partition_key": &types.AttributeValueMemberS{Value: gId},
+			"_sort_key":      &types.AttributeValueMemberS{Value: "current"},
+			"physical_name":  &types.AttributeValueMemberS{Value: fmt.Sprintf("%s%d", prefix, i)},
+			"logical_name":   &types.AttributeValueMemberS{Value: fmt.Sprintf("%s%d", prefix, i)},
+			"_entity_type":   &types.AttributeValueMemberS{Value: "room"},
+		})
+	}
+	return items, ids
 }

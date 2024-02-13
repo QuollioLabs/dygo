@@ -82,3 +82,34 @@ func Test_batchupsert_item_invalid_data(t *testing.T) {
 		fetchAndValidateItem(t, db, id, "current", false)
 	}
 }
+
+func Test_batchupsert_raw_item_happy_path(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	newItem := new(Item)
+	items, ids := getRawItem("room-", 500)
+	for _, item := range items {
+		db.ItemRaw(item).AddBatchUpsertRawItem(newItem)
+	}
+
+	items1, ids1 := getRawItem("room-", 300)
+	for _, item := range items1 {
+		db.ItemRaw(item).AddBatchUpsertRawItem(newItem)
+	}
+
+	err = newItem.BatchUpsertItem(context.Background(), 10)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ids = append(ids, ids1...)
+
+	// validate item
+	for _, id := range ids {
+		fetchAndValidateItem(t, db, id, "current", true)
+		removeItem(t, id, "current")
+	}
+}

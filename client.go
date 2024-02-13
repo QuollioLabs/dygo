@@ -319,6 +319,30 @@ func (c *Client) Item(item ItemData) *Item {
 	return i
 }
 
+// ItemRaw returns a new instance of the Item struct, initialized with the provided raw item and client.
+// It does not require the item to implement the Validate() method.
+//
+// Example:
+//
+//	newItem := new(Item)
+//	for _, item := range items {
+//		db.ItemRaw(item).AddBatchUpsertRawItem(newItem)
+//	}
+//	// here items is of type []map[string]types.AttributeValue
+//
+//	err = newItem.BatchUpsertItem(context.Background(), 10)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+func (c *Client) ItemRaw(items map[string]types.AttributeValue) *Item {
+	i := &Item{
+		c: c,
+	}
+	i.batchData.batchPutRaw = items
+	i.err = i.validate("TableName", c.tableName)
+	return i
+}
+
 // Project sets the projection for the item.
 // It takes a variadic parameter `value` which represents the projection fields.
 //
@@ -451,6 +475,25 @@ func (i *Item) AddBatchUpsertItem(newItem *Item) {
 	newItem.addBatchUpsertItem()
 }
 
+// AddBatchUpsertRawItem adds a new raw item (types.AttributeValue) to the batch upsert operation.
+//
+// Example:
+//
+//	newItem := new(Item)
+//	for _, item := range items {
+//		db.ItemRaw(item).AddBatchUpsertRawItem(newItem)
+//	}
+//	// here items is of type []map[string]types.AttributeValue
+//
+//	err = newItem.BatchUpsertItem(context.Background(), 10)
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+func (i *Item) AddBatchUpsertRawItem(newItem *Item) {
+	i.fillItem(newItem)
+	newItem.addBatchUpsertRawItem()
+}
+
 // fillItem fills the fields of the given newItem with the values from the current Item.
 func (i *Item) fillItem(newItem *Item) {
 	newItem.c = i.c
@@ -462,6 +505,7 @@ func (i *Item) fillItem(newItem *Item) {
 	newItem.useGSI = i.useGSI
 	newItem.pagination = i.pagination
 	newItem.indexName = i.indexName
+	newItem.batchData.batchPutRaw = i.batchData.batchPutRaw
 	if newItem.err == nil {
 		newItem.err = i.err
 	}
