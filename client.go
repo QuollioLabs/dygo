@@ -472,7 +472,7 @@ func (i *Item) AddBatchUpsertItem(newItem *Item) {
 		return
 	}
 	i.fillItem(newItem)
-	newItem.addBatchUpsertItem()
+	newItem.addBatchUpsertItem(false)
 }
 
 // AddBatchUpsertRawItem adds a new raw item (types.AttributeValue) to the batch upsert operation.
@@ -491,7 +491,7 @@ func (i *Item) AddBatchUpsertItem(newItem *Item) {
 //	}
 func (i *Item) AddBatchUpsertRawItem(newItem *Item) {
 	i.fillItem(newItem)
-	newItem.addBatchUpsertRawItem()
+	newItem.addBatchUpsertItem(true)
 }
 
 // fillItem fills the fields of the given newItem with the values from the current Item.
