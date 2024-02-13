@@ -34,6 +34,7 @@ type keys struct {
 	batchGet    map[int]map[string]types.KeysAndAttributes
 	batchPut    map[int]map[string][]types.WriteRequest
 	batchDelete map[int]map[string][]types.WriteRequest
+	batchPutRaw map[string]types.AttributeValue
 }
 
 type pagination struct {
@@ -268,7 +269,7 @@ func (i *Item) findBatchDeleteIndexIfBatchFull(batchIndex int) int {
 }
 
 // addBatchUpsertItem adds the current item to the batch put operation.
-func (i *Item) addBatchUpsertItem() {
+func (i *Item) addBatchUpsertItem(isRaw bool) {
 	if i.batchData.batchPut == nil {
 		i.batchData.batchPut = make(map[int]map[string][]types.WriteRequest)
 	}
@@ -277,8 +278,14 @@ func (i *Item) addBatchUpsertItem() {
 		i.batchData.batchPut[batchIndex][i.c.tableName] = []types.WriteRequest{}
 	}
 	batchIndex = i.findBatchPutIndexIfBatchFull(batchIndex)
-	// TODO: log error
-	itemJson, _ := attributevalue.MarshalMap(i.item)
+
+	var itemJson map[string]types.AttributeValue
+	if isRaw {
+		itemJson = i.batchData.batchPutRaw
+	} else {
+		itemJson, _ = attributevalue.MarshalMap(i.item)
+	}
+
 	i.batchData.batchPut[batchIndex][i.c.tableName] = append(i.batchData.batchPut[batchIndex][i.c.tableName], types.WriteRequest{
 		PutRequest: &types.PutRequest{
 			Item: itemJson,
