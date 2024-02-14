@@ -15,8 +15,9 @@ type output struct {
 
 func newOutput(item *Item, ctx context.Context) *output {
 	return &output{
-		item: item,
-		ctx:  ctx,
+		item:    item,
+		ctx:     ctx,
+		Results: make([]map[string]types.AttributeValue, 0),
 	}
 }
 
@@ -45,6 +46,10 @@ func (o *output) Run() error {
 //
 // Here Unmarshal will unmarshal only the items with _entity_type = "room".
 func (o *output) Unmarshal(out Out, entityTypes []string) *output {
+	if o.item.err != nil || o.Results == nil {
+		return o
+	}
+
 	targetAttVals := []map[string]types.AttributeValue{}
 	for _, result := range o.Results {
 		switch v := result[getPartitionKey(o.item)].(type) {
