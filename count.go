@@ -5,6 +5,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
 const opCount = "Count"
@@ -43,6 +44,7 @@ func (i *Item) Count(ctx context.Context) (int, int, error) {
 		FilterExpression:          expr.Filter(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
+		Select:                    types.SelectCount,
 	}
 
 	if i.useGSI {
