@@ -343,6 +343,35 @@ func (c *Client) ItemRaw(items map[string]types.AttributeValue) *Item {
 	return i
 }
 
+// UpdateItem returns a new instance of the Item struct, initialized with the provided item and client.
+// It is used to update an existing item in the table.
+//
+// Example:
+//
+//	newItem := new(Item)
+//	for _, item := range items {
+//		db.UpdateItemRaw(item).AddUpdateRawItem(newItem)
+//	}
+//
+//	err = newItem.Update(context.Background(), 5)
+func (c *Client) UpdateItemRaw(item map[string]any) *Item {
+	i := &Item{
+		c: c,
+	}
+
+	k := make(map[string]types.AttributeValue)
+	k[c.partitionKey] = createAttributeValue(item[c.partitionKey])
+	delete(item, c.partitionKey)
+	if c.sortKey != "" {
+		k[c.sortKey] = createAttributeValue(item[c.sortKey])
+		delete(item, c.sortKey)
+	}
+
+	i.batchData.updateItems = append(i.batchData.updateItems, updateItem{updateItem: item, key: k})
+	i.err = i.validate("TableName", c.tableName)
+	return i
+}
+
 // Project sets the projection for the item.
 // It takes a variadic parameter `value` which represents the projection fields.
 //
@@ -475,6 +504,20 @@ func (i *Item) AddBatchUpsertItem(newItem *Item) {
 	newItem.addBatchUpsertItem(false)
 }
 
+// AddUpdateRawItem adds a new raw item (types.AttributeValue) to the update operation.
+//
+// Example:
+//
+//	newItem := new(Item)
+//	for _, item := range items {
+//		db.UpdateItemRaw(item).AddUpdateRawItem(newItem)
+//	}
+//
+//	err = newItem.Update(context.Background(), 5)
+func (i *Item) AddUpdateRawItem(newItem *Item) {
+	i.fillItem(newItem)
+}
+
 // AddBatchUpsertRawItem adds a new raw item (types.AttributeValue) to the batch upsert operation.
 //
 // Example:
@@ -506,6 +549,7 @@ func (i *Item) fillItem(newItem *Item) {
 	newItem.pagination = i.pagination
 	newItem.indexName = i.indexName
 	newItem.batchData.batchPutRaw = i.batchData.batchPutRaw
+	newItem.batchData.updateItems = append(newItem.batchData.updateItems, i.batchData.updateItems...)
 	if newItem.err == nil {
 		newItem.err = i.err
 	}

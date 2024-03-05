@@ -104,3 +104,21 @@ func (i *Item) createItemExpression() (expression.Expression, error) {
 	}
 	return expr, nil
 }
+
+// getUpdateItemExpression returns the expression for updating an item in DynamoDB.
+func (i *Item) getUpdateItemExpression(index int) (*expression.Expression, error) {
+	if err := i.isUpdateItemValid(index); err != nil {
+		return nil, err
+	}
+
+	builder := expression.NewBuilder()
+	for attrName, attrValue := range i.batchData.updateItems[index].updateItem {
+		builder = builder.WithUpdate(expression.Set(expression.Name(attrName), expression.Value(attrValue)))
+	}
+
+	expr, err := builder.Build()
+	if err != nil {
+		log.Fatalf("failed to build expression, %v", err)
+	}
+	return &expr, nil
+}

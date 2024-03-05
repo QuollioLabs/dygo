@@ -391,3 +391,15 @@ func getRawItem(prefix string, count int) ([]map[string]types.AttributeValue, []
 	}
 	return items, ids
 }
+
+func getUpdateItem(gIds []string, count int) []map[string]any {
+	items := make([]map[string]any, 0)
+	for i := 0; i < count; i++ {
+		items = append(items, map[string]any{
+			"_partition_key": gIds[i],
+			"_sort_key":      "current",
+			"physical_name":  "updated-"+gIds[i],
+		})
+	}
+	return items
+}
