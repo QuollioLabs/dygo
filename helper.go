@@ -134,6 +134,35 @@ func (i *Item) isGetItemValid() error {
 	return nil
 }
 
+// isUpdateItemValid checks if the provided item is valid for an UpdateItem operation.
+func (i *Item) isUpdateItemValid(index int) error {
+	switch {
+	case i.c.partitionKey == "":
+		return errors.New("partition key name is empty")
+	case i.c.tableName == "":
+		return errors.New("table name is empty")
+	case i.batchData.updateItems[index].key == nil:
+		return errors.New("key is empty")
+	case i.batchData.updateItems[index].key != nil:
+		if _, ok := i.batchData.updateItems[index].key[i.c.partitionKey]; !ok {
+			return errors.New("partition key is empty")
+		}
+		if i.c.sortKey != "" {
+			if _, ok := i.batchData.updateItems[index].key[i.c.sortKey]; !ok {
+				return errors.New("sort key is empty")
+			}
+		}
+		if i.c.sortKey == "" {
+			if len(i.batchData.updateItems[index].key) > 1 {
+				return errors.New("too many keys")
+			}
+		}
+	case i.useGSI:
+		return errors.New("couldn't use gsi with get item")
+	}
+	return nil
+}
+
 // stringExists checks if a given string exists in a slice of strings.
 func stringExists(s []string, str string) bool {
 	for _, v := range s {

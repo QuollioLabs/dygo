@@ -35,12 +35,18 @@ type keys struct {
 	batchPut    map[int]map[string][]types.WriteRequest
 	batchDelete map[int]map[string][]types.WriteRequest
 	batchPutRaw map[string]types.AttributeValue
+	updateItems []updateItem
 }
 
 type pagination struct {
 	lastEvaluatedKey map[string]types.AttributeValue
 	limit            int32
 	desc             bool
+}
+
+type updateItem struct {
+	updateItem map[string]any
+	key        map[string]types.AttributeValue
 }
 
 const (
@@ -314,4 +320,8 @@ func (i *Item) findBatchPutIndexIfBatchFull(batchIndex int) int {
 		i.batchData.batchPut[batchIndex] = make(map[string][]types.WriteRequest)
 	}
 	return batchIndex
+}
+
+func (i *Item) getUpdateItemKey(index int) map[string]types.AttributeValue {
+	return i.batchData.updateItems[index].key
 }
