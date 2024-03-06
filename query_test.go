@@ -404,13 +404,13 @@ func Test_queryauthorize_with_gsi_limit(t *testing.T) {
 }
 
 func Test_queryauthorize_with_multiple_gsi(t *testing.T) {
-	db, err := getClientMultipleGsi(blank, true)
+	db, err := getClientMultipleGsi(blank)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefixMultipleGsi(t, true, 5, prefix, blank)
+	gIds := createItemWithPrefixMultipleGsi(t, 5, prefix, blank)
 	SK := "current"
 	var data dataSlice
 

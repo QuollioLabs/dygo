@@ -138,7 +138,7 @@ func getClient(keySeparator string, withTable bool) (*Client, error) {
 	)
 }
 
-func getClientMultipleGsi(keySeparator string, withTable bool) (*Client, error) {
+func getClientMultipleGsi(keySeparator string) (*Client, error) {
 	dbEndpoint := "http://localhost:8000"
 	return NewClient(
 		WithTableName("test-table-2"),
@@ -222,7 +222,7 @@ func removeItem(t *testing.T, PK, SK string) {
 }
 
 func removeItemMultipleGsi(t *testing.T, PK, SK string) {
-	db, err := getClientMultipleGsi(blank, true)
+	db, err := getClientMultipleGsi(blank)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}
@@ -296,8 +296,8 @@ func createItemWithPrefix(t *testing.T, withTable bool, count int, prefix string
 	return gIds
 }
 
-func createItemWithPrefixMultipleGsi(t *testing.T, withTable bool, count int, prefix string, separator string) []string {
-	db, err := getClientMultipleGsi(separator, withTable)
+func createItemWithPrefixMultipleGsi(t *testing.T, count int, prefix string, separator string) []string {
+	db, err := getClientMultipleGsi(separator)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
 	}

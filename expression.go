@@ -111,12 +111,12 @@ func (i *Item) getUpdateItemExpression(index int) (*expression.Expression, error
 		return nil, err
 	}
 
-	builder := expression.NewBuilder()
+	var updateBuilder expression.UpdateBuilder
 	for attrName, attrValue := range i.batchData.updateItems[index].updateItem {
-		builder = builder.WithUpdate(expression.Set(expression.Name(attrName), expression.Value(attrValue)))
+		updateBuilder = updateBuilder.Set(expression.Name(attrName), expression.Value(attrValue))
 	}
 
-	expr, err := builder.Build()
+	expr, err := expression.NewBuilder().WithUpdate(updateBuilder).Build()
 	if err != nil {
 		log.Fatalf("failed to build expression, %v", err)
 	}
