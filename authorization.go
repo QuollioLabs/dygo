@@ -8,9 +8,10 @@ import (
 )
 
 type output struct {
-	Results []map[string]types.AttributeValue
-	item    *Item
-	ctx     context.Context
+	Results    []map[string]types.AttributeValue
+	item       *Item
+	ctx        context.Context
+	bypassAuth bool
 }
 
 func newOutput(item *Item, ctx context.Context) *output {
@@ -65,10 +66,25 @@ func (o *output) Unmarshal(out Out, entityTypes []string) *output {
 		o.item.err = err
 	}
 
-	err := out.Authorize(o.ctx)
-	if err != nil {
-		o.item.err = dynamoError().method("authorization").message(err.Error())
+	if !o.bypassAuth {
+		err := out.Authorize(o.ctx)
+		if err != nil {
+			o.item.err = dynamoError().method("authorization").message(err.Error())
+		}
 	}
+	return o
+}
+
+// BypassAuthorization is used to bypass the authorization process inside Unmarshal function.
+// Example :
+//
+//	var data []dataItem
+//	err = item.BatchGetAuthorizedItem(context.Background(), 10).
+//	    BypassAuth().
+//		Unmarshal(&data, []string{"room"}).
+//		Run()
+func (o *output) BypassAuthorization() *output {
+	o.bypassAuth = true
 	return o
 }
 
