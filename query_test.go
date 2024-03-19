@@ -437,3 +437,42 @@ func Test_queryauthorize_with_multiple_gsi(t *testing.T) {
 		removeItemMultipleGsi(t, v, SK)
 	}
 }
+
+func Test_query_with_gsi_bypassAuth(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	prefix := "name_test_"
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	SK := "current"
+	var data dataSlice
+
+	err = db.
+		GSI("gsi-name", "room", Equal("current")).
+		Filter("physical_name", KeyBeginsWith(prefix)).
+		AndFilter("logical_name", KeyBeginsWith(prefix)).
+		Project("_partition_key", "_entity_type", "_sort_key", "physical_name", "logical_name").
+		Query(context.Background()).
+		BypassAuthorization().
+		Unmarshal(&data, []string{"room"}).
+		Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, d := range data {
+		if exist := stringExists(gIds, d.PK); !exist {
+			t.Fatalf("expected _partition_key : %v not found", d.PK)
+		}
+	}
+	if len(data) != 5 {
+		t.Fatalf("expected 1 items but got %v", len(data))
+	}
+	// remove item
+	for _, v := range gIds {
+		removeItem(t, v, SK)
+	}
+}

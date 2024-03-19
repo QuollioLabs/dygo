@@ -398,7 +398,7 @@ func getUpdateItem(gIds []string, count int) []map[string]any {
 		items = append(items, map[string]any{
 			"_partition_key": gIds[i],
 			"_sort_key":      "current",
-			"physical_name":  "updated-"+gIds[i],
+			"physical_name":  "updated-" + gIds[i],
 		})
 	}
 	return items
