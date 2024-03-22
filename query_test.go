@@ -52,7 +52,7 @@ func Test_queryauthorize_with_gsi(t *testing.T) {
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank, false)
 	SK := "current"
 	var data dataSlice
 
@@ -92,7 +92,7 @@ func Test_query_with_gsi_invalidandfilter(t *testing.T) {
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank, false)
 	SK := "current"
 	var data dataSlice
 
@@ -119,7 +119,7 @@ func Test_query_with_gsi_invalidorfilter(t *testing.T) {
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank, false)
 	SK := "current"
 	var data dataSlice
 
@@ -146,7 +146,7 @@ func Test_query_with_gsi_without_tablename(t *testing.T) {
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank, false)
 	SK := "current"
 	var data dataSlice
 
@@ -172,7 +172,7 @@ func Test_query_with_keyseparator(t *testing.T) {
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, true, 5, prefix, separator)
+	gIds := createItemWithPrefix(t, true, 5, prefix, separator, false)
 	SK := "current"
 	var data dataSlice
 
@@ -214,7 +214,7 @@ func Test_query_with_filter_keycontains(t *testing.T) {
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank, false)
 	SK := "current"
 	var data dataSlice
 
@@ -249,7 +249,7 @@ func Test_query_with_filter_keynotcontains(t *testing.T) {
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank, false)
 	SK := "current"
 	var data dataSlice
 
@@ -284,7 +284,7 @@ func Test_query_with_filter_keyin(t *testing.T) {
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank, false)
 	SK := "current"
 	var data dataSlice
 
@@ -362,10 +362,10 @@ func Test_queryauthorize_with_gsi_limit(t *testing.T) {
 	}
 
 	prefix1 := "name_test_1_"
-	gIds := createItemWithPrefix(t, true, 5000, prefix1, blank)
+	gIds := createItemWithPrefix(t, true, 5000, prefix1, blank, false)
 
 	prefix2 := "name_test_2_"
-	gIds = append(gIds, createItemWithPrefix(t, true, 150, prefix2, blank)...)
+	gIds = append(gIds, createItemWithPrefix(t, true, 150, prefix2, blank, false)...)
 
 	SK := "current"
 	limit := 40
@@ -445,7 +445,7 @@ func Test_query_with_gsi_bypassAuth(t *testing.T) {
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, true, 5, prefix, blank)
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank, false)
 	SK := "current"
 	var data dataSlice
 
@@ -457,6 +457,43 @@ func Test_query_with_gsi_bypassAuth(t *testing.T) {
 		Query(context.Background()).
 		BypassAuthorization().
 		Unmarshal(&data, []string{"room"}).
+		Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, d := range data {
+		if exist := stringExists(gIds, d.PK); !exist {
+			t.Fatalf("expected _partition_key : %v not found", d.PK)
+		}
+	}
+	if len(data) != 5 {
+		t.Fatalf("expected 1 items but got %v", len(data))
+	}
+	// remove item
+	for _, v := range gIds {
+		removeItem(t, v, SK)
+	}
+}
+
+func Test_queryauthorize_with_gsi_without_sk(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	prefix := "name_test_"
+	gIds := createItemWithPrefix(t, true, 5, prefix, blank, true)
+	gIds = append(gIds, createItemWithPrefix(t, true, 5, prefix, blank, false)...)
+
+	SK := "current"
+	var data dataSlice
+
+	err = db.
+		GSI("gsi-name", "hotel", nil).
+		Query(context.Background()).
+		Unmarshal(&data, []string{"hotel"}).
 		Run()
 
 	if err != nil {

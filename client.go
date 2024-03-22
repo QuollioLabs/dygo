@@ -252,6 +252,7 @@ func (c *Client) PK(value any) *Item {
 // The indexName specifies the name of the GSI.
 // The partitionKeyValue specifies the value of the partition key for the GSI query.
 // The f SortKeyFunc is a function that defines the sort key for the GSI query.
+// It can be Equal, BeginsWith, Between, LessThan, LessThanEqual, GreaterThan, GreaterThanEqual or nil
 // It returns an Item object that can be used to perform operations on the GSI.
 //
 // Example:

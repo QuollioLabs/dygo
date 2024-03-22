@@ -265,7 +265,7 @@ func createItem(t *testing.T, withTable bool, count int) []string {
 	return gIds
 }
 
-func createItemWithPrefix(t *testing.T, withTable bool, count int, prefix string, separator string) []string {
+func createItemWithPrefix(t *testing.T, withTable bool, count int, prefix string, separator string, changeEntityType bool) []string {
 	db, err := getClient(separator, withTable)
 	if err != nil {
 		t.Fatalf("unexpected error : %v", err)
@@ -274,13 +274,19 @@ func createItemWithPrefix(t *testing.T, withTable bool, count int, prefix string
 	SK := "current"
 
 	for i := 0; i < count; i++ {
-		PK := newPK("room")
+		var e string
+		if changeEntityType {
+			e = "hotel"
+		} else {
+			e = "room"
+		}
+		PK := newPK(e)
 		gIds = append(gIds, PK)
 
 		newData := dataItem{
 			PK:           PK,
 			SK:           SK,
-			EntityType:   "room" + separator,
+			EntityType:   e + separator,
 			PhysicalName: fmt.Sprintf("%s%d", prefix, i),
 			LogicalName:  fmt.Sprintf("%s%d", prefix, i),
 		}
