@@ -42,7 +42,7 @@ func Test_count_with_gsi(t *testing.T) {
 	}
 
 	prefix := "name_test_"
-	gIds := createItemWithPrefix(t, true, 51, prefix, blank)
+	gIds := createItemWithPrefix(t, true, 51, prefix, blank, false)
 	SK := "current"
 
 	_, filterCount, err := db.
