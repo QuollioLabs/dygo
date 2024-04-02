@@ -23,6 +23,9 @@ func newOutput(item *Item, ctx context.Context) *output {
 }
 
 func (o *output) Run() error {
+	if o == nil || o.item == nil {
+		return nil
+	}
 	return o.item.err
 }
 
