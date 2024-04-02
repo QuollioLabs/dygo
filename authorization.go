@@ -23,6 +23,9 @@ func newOutput(item *Item, ctx context.Context) *output {
 }
 
 func (o *output) Run() error {
+	if o == nil || o.item == nil {
+		return nil
+	}
 	return o.item.err
 }
 
@@ -47,7 +50,7 @@ func (o *output) Run() error {
 //
 // Here Unmarshal will unmarshal only the items with _entity_type = "room".
 func (o *output) Unmarshal(out Out, entityTypes []string) *output {
-	if o.item.err != nil || o.Results == nil {
+	if o == nil || o.item == nil || o.item.err != nil || o.Results == nil {
 		return o
 	}
 
