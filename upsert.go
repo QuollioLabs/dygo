@@ -34,6 +34,16 @@ func (i *Item) Upsert(ctx context.Context) error {
 		TableName: aws.String(i.c.tableName),
 	}
 
+	if i.condition.IsSet() {
+		expr, err := i.getConditionalUpdateExpression()
+		if err != nil {
+			return dynamoError().method(opUpdate).message(err.Error())
+		}
+		input.ConditionExpression = expr.Condition()
+		input.ExpressionAttributeNames = expr.Names()
+		input.ExpressionAttributeValues = expr.Values()
+	}
+
 	if _, err := i.c.client.PutItem(context.TODO(), &input); err != nil {
 		if err := getDynamoDBError(opUpsert, err); err != nil {
 			return err
