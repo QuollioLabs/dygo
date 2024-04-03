@@ -122,3 +122,15 @@ func (i *Item) getUpdateItemExpression(index int) (*expression.Expression, error
 	}
 	return &expr, nil
 }
+
+func (i *Item) getConditionalUpdateExpression() (*expression.Expression, error) {
+	builder := expression.NewBuilder()
+	if i.condition.IsSet() {
+		builder = builder.WithCondition(i.condition)
+	}
+	expr, err := builder.Build()
+	if err != nil {
+		return nil, err
+	}
+	return &expr, nil
+}

@@ -23,6 +23,7 @@ type dataItem struct {
 	LogicalName  string    `json:"logical_name" dynamodbav:"logical_name"`
 	EntityType   string    `json:"_entity_type" dynamodbav:"_entity_type"`
 	IsAuthorized bool      `json:"is_authorized" dynamodbav:"is_authorized"`
+	Version      int       `json:"version" dynamodbav:"version"`
 	CreatedAt    time.Time `json:"_created_at" dynamodbav:"_created_at"`
 	UpdatedAt    time.Time `json:"_updated_at" dynamodbav:"_updated_at"`
 }
@@ -250,6 +251,7 @@ func createItem(t *testing.T, withTable bool, count int) []string {
 			PK:           PK,
 			SK:           SK,
 			EntityType:   "room",
+			Version:      i,
 			PhysicalName: fmt.Sprintf("physical_name_%d", i),
 			LogicalName:  fmt.Sprintf("logical_name_%d", i),
 		}

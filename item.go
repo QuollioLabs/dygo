@@ -20,6 +20,7 @@ type Item struct {
 	batchData    keys
 	pagination   pagination
 	filter       expression.ConditionBuilder
+	condition    expression.ConditionBuilder
 	key          map[string]types.AttributeValue // required only for GetItem/DeleteItem
 	keyCondition expression.KeyConditionBuilder
 }
@@ -85,8 +86,13 @@ func (i *Item) sort(key string, f SortKeyFunc) *Item {
 
 // buildFilter builds a filter for the Item based on the provided attributeName and FilterFunc.
 func (i *Item) buildFilter(attributeName string, f FilterFunc) *Item {
-	condition := f(attributeName)
-	i.filter = condition
+	i.filter = f(attributeName)
+	return i
+}
+
+// buildCondition builds a condition for the Item based on the provided attributeName and ConditionFunc.
+func (i *Item) buildCondition(attributeName string, f ConditionFunc) *Item {
+	i.condition = f(attributeName)
 	return i
 }
 

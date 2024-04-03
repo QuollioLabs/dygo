@@ -401,6 +401,20 @@ func (i *Item) Filter(attributeName string, filterFunc FilterFunc) *Item {
 	return i.buildFilter(attributeName, filterFunc)
 }
 
+// Condition sets condition for ConditionExpression.
+// NOTE: It is currently supported for only Upsert operation.
+// It takes the attribute name and condition function as parameters.
+// Possible values for ConditionFunc are ConditionEqual, ConditionNotEqual, ConditionLessThan, ConditionLessThanEqual, ConditionGreaterThan, ConditionGreaterThanEqual, ConditionBetween, ConditionIn, ConditionAttributeExists, ConditionAttributeNotExists and ConditionBeginsWith.
+// Example:
+//
+//	 err = db.
+//		Item(newData).
+//		Condition("version", ConditionEqual(10)).
+//		Upsert(context.Background())
+func (i *Item) Condition(attributeName string, conditionFunc ConditionFunc) *Item {
+	return i.buildCondition(attributeName, conditionFunc)
+}
+
 // AndFilter applies an additional logical AND filter to the existing filter using the specified attribute name and filter function.
 // It should be used after the Filter function.
 //
