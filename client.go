@@ -355,16 +355,16 @@ func (c *Client) ItemRaw(items map[string]types.AttributeValue) *Item {
 //	}
 //
 //	err = newItem.Update(context.Background(), 5)
-func (c *Client) UpdateItemRaw(item map[string]any) *Item {
+func (c *Client) UpdateItemRaw(item map[string]types.AttributeValue) *Item {
 	i := &Item{
 		c: c,
 	}
 
 	k := make(map[string]types.AttributeValue)
-	k[c.partitionKey] = createAttributeValue(item[c.partitionKey])
+	k[c.partitionKey] = item[c.partitionKey]
 	delete(item, c.partitionKey)
 	if c.sortKey != "" {
-		k[c.sortKey] = createAttributeValue(item[c.sortKey])
+		k[c.sortKey] = item[c.sortKey]
 		delete(item, c.sortKey)
 	}
 
