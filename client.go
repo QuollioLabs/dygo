@@ -21,6 +21,7 @@ type Option func(*Client) error
 type Client struct {
 	client       *dynamodb.Client
 	region       string
+	profile      string
 	tableName    string
 	partitionKey string
 	sortKey      string
@@ -36,6 +37,15 @@ type gsi struct {
 	indexName    string
 	partitionKey string
 	sortKey      string
+}
+
+// WithProfile is a mandatory option function that sets the profile for the client.
+// It takes a profile string as a parameter and returns an error.
+func WithProfile(profile string) Option {
+	return func(c *Client) error {
+		c.tableName = profile
+		return nil
+	}
 }
 
 // WithTableName is a mandatory option function that sets the table name for the client.
@@ -150,6 +160,9 @@ func (l customLogger) Logf(classification logging.Classification, format string,
 // The `c` parameter is the client used to interact with the database.
 func loadDBConfigOptions(c Client) []func(*config.LoadOptions) error {
 	var options []func(*config.LoadOptions) error
+	if c.profile != "" {
+		options = append(options, config.WithSharedConfigProfile(c.profile))
+	}
 	options = append(options, config.WithRegion(c.region))
 
 	if c.logger != nil {
