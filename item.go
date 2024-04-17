@@ -46,7 +46,7 @@ type pagination struct {
 }
 
 type updateItem struct {
-	updateItem map[string]any
+	updateItem map[string]types.AttributeValue
 	key        map[string]types.AttributeValue
 }
 
