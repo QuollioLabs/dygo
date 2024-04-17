@@ -267,6 +267,39 @@ func createItem(t *testing.T, withTable bool, count int) []string {
 	return gIds
 }
 
+func createItemWithSK(t *testing.T, withTable bool, count int, SK string) ([]string, []string) {
+	db, err := getClient(blank, withTable)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+	gIds := make([]string, 0)
+	sks := make([]string, 0)
+	PK := newPK("room")
+	for i := 0; i < count; i++ {
+		gIds = append(gIds, PK)
+		SK := fmt.Sprintf("%s_%d", SK, i)
+		sks = append(sks, SK)
+
+		newData := dataItem{
+			PK:           PK,
+			SK:           SK,
+			EntityType:   "room",
+			Version:      i,
+			PhysicalName: fmt.Sprintf("physical_name_%d", i),
+			LogicalName:  fmt.Sprintf("logical_name_%d", i),
+		}
+
+		err := db.
+			Item(newData).
+			Create(context.Background())
+
+		if err != nil {
+			t.Fatalf("unexpected error in creating item : %v", err)
+		}
+	}
+	return gIds, sks
+}
+
 func createItemWithPrefix(t *testing.T, withTable bool, count int, prefix string, separator string, changeEntityType bool) []string {
 	db, err := getClient(separator, withTable)
 	if err != nil {

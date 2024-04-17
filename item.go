@@ -80,7 +80,7 @@ func (i *Item) sort(key string, f SortKeyFunc) *Item {
 		i.err = i.validate("SK", sortKeyValue)
 	}
 	i.key[key] = createAttributeValue(sortKeyValue)
-	i.keyCondition.And(keyCondition)
+	i.keyCondition = i.keyCondition.And(keyCondition)
 	return i
 }
 
