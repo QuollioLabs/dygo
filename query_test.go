@@ -513,3 +513,43 @@ func Test_queryauthorize_with_gsi_without_sk(t *testing.T) {
 		removeItem(t, v, SK)
 	}
 }
+
+func Test_queryauthorize_item_sk_BeginsWith(t *testing.T) {
+
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	gIds, sks := createItemWithSK(t, true, 5, "current")
+
+	PK := gIds[0]
+	var data dataSlice
+
+	err = db.
+		PK(PK).
+		SK(BeginsWith("current_1")).
+		Project("_partition_key", "_entity_type", "_sort_key").
+		Query(context.Background()).
+		Unmarshal(&data, []string{"room"}).
+		Run()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(data) != 1 {
+		t.Fatalf("expected 1 items but got %v", len(data))
+	}
+
+	for _, d := range data {
+		if exist := stringExists(gIds, d.PK); !exist && d.SK != sks[1] {
+			t.Fatalf("expected _partition_key : %v not found", d.PK)
+		}
+	}
+
+	// remove item
+	for i, v := range gIds {
+		removeItem(t, v, sks[i])
+	}
+}

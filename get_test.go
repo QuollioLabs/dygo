@@ -120,3 +120,34 @@ func Test_get_item_without_tablename(t *testing.T) {
 	// remove item
 	removeItem(t, PK, SK)
 }
+
+func Test_get_item_happy_path_pkskUnique(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	gIds, sks := createItemWithSK(t, true, 1, "current")
+	SK := sks[0]
+	PK := gIds[0]
+
+	d := dataItem{}
+	err = db.
+		PK(PK).
+		SK(Equal(SK)).
+		GetItem(context.Background(), &d)
+	if err != nil {
+		t.Fatalf("unexpected error in fetching item: %v", err)
+	}
+
+	if d.PK != PK {
+		t.Fatalf("expected _partition_key : %v but got %v", PK, d.PK)
+	}
+
+	if exist := stringExists(gIds, d.PK); !exist {
+		t.Fatalf("expected _partition_key : %v not found", d.PK)
+	}
+
+	// remove item
+	removeItem(t, PK, SK)
+}
