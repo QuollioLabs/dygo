@@ -36,6 +36,15 @@ func (d dataItem) Validate() error {
 	)
 }
 
+func (d dataSlice) Validate() error {
+	for _, v := range d {
+		if err := v.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (d *dataItem) Authorize(ctx context.Context) error {
 	d.IsAuthorized = isAuthorized()
 	gId := d.PK

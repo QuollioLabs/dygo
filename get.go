@@ -20,7 +20,7 @@ const opGet = "Get"
 //		PK(PK).
 //		SK(Equal(SK)).
 //		GetItem(context.Background(), &d)
-func (i *Item) GetItem(ctx context.Context, out interface{}) error {
+func (i *Item) GetItem(ctx context.Context, out ItemData) error {
 	if i.err != nil {
 		return i.err
 	}
@@ -51,7 +51,9 @@ func (i *Item) GetItem(ctx context.Context, out interface{}) error {
 	if err := attributevalue.UnmarshalMap(output.Item, &out); err != nil {
 		return dynamoError().method(opGet).message(err.Error())
 	}
-
+	if err := out.Validate(); err != nil {
+		return dynamoError().method(opGet).message(err.Error())
+	}
 	return nil
 }
 
@@ -98,8 +100,10 @@ func (i *Item) GetAuthorizedItem(ctx context.Context, out Out) error {
 		return err
 	}
 
-	err = out.Authorize(ctx)
-	if err != nil {
+	if err := out.Validate(); err != nil {
+		return dynamoError().method(opGet).message(err.Error())
+	}
+	if err := out.Authorize(ctx); err != nil {
 		return err
 	}
 	return nil
