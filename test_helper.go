@@ -36,6 +36,15 @@ func (d dataItem) Validate() error {
 	)
 }
 
+func (d dataSlice) Validate() error {
+	for _, v := range d {
+		if err := v.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (d *dataItem) Authorize(ctx context.Context) error {
 	d.IsAuthorized = isAuthorized()
 	gId := d.PK
@@ -56,11 +65,11 @@ func (d *dataSlice) Authorize(ctx context.Context) error {
 
 func lookupEntityType(pk string) string {
 	switch {
-	case pk[:2] == "rm":
+	case len(pk) > 2 && pk[:2] == "rm":
 		return "room"
-	case pk[:3] == "inv":
+	case len(pk) > 3 && pk[:3] == "inv":
 		return "inventory"
-	case pk[:3] == "htl":
+	case len(pk) > 3 && pk[:3] == "htl":
 		return "hotel"
 	}
 	return ""

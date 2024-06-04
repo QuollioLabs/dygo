@@ -70,8 +70,10 @@ func (o *output) Unmarshal(out Out, entityTypes []string) *output {
 	}
 
 	if !o.bypassAuth {
-		err := out.Authorize(o.ctx)
-		if err != nil {
+		if err := out.Validate(); err != nil {
+			o.item.err = dynamoError().method("validation").message(err.Error())
+		}
+		if err := out.Authorize(o.ctx); err != nil {
 			o.item.err = dynamoError().method("authorization").message(err.Error())
 		}
 	}
@@ -95,4 +97,5 @@ func (o *output) BypassAuthorization() *output {
 // It has a Authorize method that is used to perform authorization on the retrieved items.
 type Out interface {
 	Authorize(context.Context) error
+	Validate() error
 }
