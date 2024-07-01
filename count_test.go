@@ -91,3 +91,73 @@ func Test_count_item_pkskUnique_(t *testing.T) {
 		removeItem(t, v, sks[i])
 	}
 }
+
+func Test_count_with_gsi_and_limit(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	totalItem := 51
+	prefix := "name_test_"
+	gIds := createItemWithPrefix(t, true, totalItem, prefix, blank, false)
+	SK := "current"
+	limit := 5
+
+	totalCount, filterCount, err := db.
+		GSI("gsi-name", "room", Equal("current")).
+		Filter("physical_name", KeyBeginsWith(prefix)).
+		AndFilter("logical_name", KeyBeginsWith(prefix)).
+		Limit(limit).
+		Count(context.Background())
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if totalCount != totalItem {
+		t.Fatalf("expected %v items but got %v", totalItem, totalCount)
+	}
+	if filterCount != limit {
+		t.Fatalf("expected %v items but got %v", limit, filterCount)
+	}
+	// remove item
+	for _, v := range gIds {
+		removeItem(t, v, SK)
+	}
+}
+
+func Test_count_with_gsi_and_item_morethan_limit(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	totalItem := 51
+	prefix := "name_test_"
+	gIds := createItemWithPrefix(t, true, totalItem, prefix, blank, false)
+	SK := "current"
+	limit := 500
+
+	totalCount, filterCount, err := db.
+		GSI("gsi-name", "room", Equal("current")).
+		Filter("physical_name", KeyBeginsWith(prefix)).
+		AndFilter("logical_name", KeyBeginsWith(prefix)).
+		Limit(limit).
+		Count(context.Background())
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if totalCount != totalItem {
+		removeItems(t, gIds, SK)
+		t.Fatalf("expected %v items but got %v", totalItem, totalCount)
+	}
+	if filterCount != totalItem {
+		removeItems(t, gIds, SK)
+		t.Fatalf("expected %v items but got %v", totalItem, filterCount)
+	}
+	// remove item
+	removeItems(t, gIds, SK)
+}
