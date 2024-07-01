@@ -68,6 +68,10 @@ func (i *Item) getAllPages(ctx context.Context, input *dynamodb.QueryInput) (int
 		}
 		totalCount += int(output.ScannedCount)
 		filteredCount += int(output.Count)
+		if i.pagination.limit > 0 && filteredCount >= int(i.pagination.limit) {
+			filteredCount = int(i.pagination.limit)
+			break
+		}
 	}
 	return totalCount, filteredCount, nil
 }
