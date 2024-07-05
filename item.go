@@ -194,16 +194,25 @@ func (i *Item) addBatchGetItem() {
 		i.batchData.batchGet = make(map[int]map[string]types.KeysAndAttributes)
 	}
 	batchIndex := i.findBatchIndex()
+	expr, err := i.batchGetItemExpression()
+	if err != nil {
+		i.err = err
+		return
+	}
 	// Check if there is an entry for the table in the current batch. If not, create it.
 	if _, ok := i.batchData.batchGet[batchIndex][i.c.tableName]; !ok {
 		i.batchData.batchGet[batchIndex][i.c.tableName] = types.KeysAndAttributes{Keys: []map[string]types.AttributeValue{}}
 	}
 	batchIndex = i.findBatchIndexIfBatchFull(batchIndex)
-	// Only add the key if it's not already in the batch
+	// Add the key only if it's not already present in the batch
 	if !i.keyExists(batchIndex, i.key) {
 		// Extract the KeysAndAttributes struct, modify it, and put it back in the map.
 		keysAndAttributes := i.batchData.batchGet[batchIndex][i.c.tableName]
 		keysAndAttributes.Keys = append(keysAndAttributes.Keys, i.key)
+		if expr.Projection() != nil {
+			keysAndAttributes.ProjectionExpression = expr.Projection()
+			keysAndAttributes.ExpressionAttributeNames = expr.Names()
+		}
 		i.batchData.batchGet[batchIndex][i.c.tableName] = keysAndAttributes
 	}
 }

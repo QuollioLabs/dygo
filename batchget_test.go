@@ -35,6 +35,53 @@ func Test_batchgetauthorized_item_happy_path(t *testing.T) {
 		if exist := stringExists(gIds, d.PK); !exist {
 			t.Fatalf("expected _partition_key : %v not found", d.PK)
 		}
+		if d.LogicalName == "" {
+			t.Fatalf("expected non-empty logical_name but got empty value")
+		}
+		if d.PhysicalName == "" {
+			t.Fatalf("expected non-empty physical_name but got empty value")
+		}
+	}
+	// remove item
+	removeItems(t, gIds, SK)
+}
+
+func Test_batchgetauthorized_item_happy_path_with_projection(t *testing.T) {
+	db, err := getClient(blank, true)
+	if err != nil {
+		t.Fatalf("unexpected error : %v", err)
+	}
+
+	SK := "current"
+	gIds := createItem(t, true, 4)
+	item := new(Item)
+	for _, gId := range gIds {
+		db.PK(gId).SK(Equal(SK)).Project("_partition_key", "_entity_type", "_sort_key", "logical_name").AddBatchGetItem(item, true)
+	}
+
+	var data dataSlice
+	err = item.
+		BatchGetAuthorizedItem(context.Background(), 10).
+		Unmarshal(&data, []string{"room"}).
+		Run()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(data) != len(gIds) {
+		t.Fatalf("expected %v items but got %v", len(gIds), len(data))
+	}
+
+	for _, d := range data {
+		if exist := stringExists(gIds, d.PK); !exist {
+			t.Fatalf("expected _partition_key : %v not found", d.PK)
+		}
+		if d.LogicalName == "" {
+			t.Fatalf("expected non-empty logical_name but got empty value")
+		}
+		if d.PhysicalName != "" {
+			t.Fatalf("expected empty physical_name but got %v", d.PhysicalName)
+		}
 	}
 	// remove item
 	removeItems(t, gIds, SK)
