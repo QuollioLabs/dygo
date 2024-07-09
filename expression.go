@@ -134,3 +134,21 @@ func (i *Item) getConditionalUpdateExpression() (*expression.Expression, error) 
 	}
 	return &expr, nil
 }
+
+func (i *Item) batchGetItemExpression() (*expression.Expression, error) {
+	builder := expression.NewBuilder()
+	var expr expression.Expression
+	if i.projection != "" {
+		proj, err := projection(i.projection)
+		if err != nil {
+			return nil, err
+		}
+		builder = builder.WithProjection(*proj)
+
+		expr, err = builder.Build()
+		if err != nil {
+			log.Fatalf("failed to build expression, %v", err)
+		}
+	}
+	return &expr, nil
+}
