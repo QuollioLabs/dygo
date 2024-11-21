@@ -79,7 +79,7 @@ func (o *output) Unmarshal(out Out, entityTypes []string) *output {
 }
 
 func (o *output) getObjectTypeAttribute() string {
-	if o == nil || o.item.customObjectTypeAttribute == "" {
+	if o.item.customObjectTypeAttribute == "" {
 		return getPartitionKey(o.item)
 	}
 
