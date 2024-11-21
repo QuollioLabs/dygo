@@ -11,18 +11,19 @@ import (
 
 // Item represents a DynamoDB item and provides methods to perform operations on it.
 type Item struct {
-	c            *Client
-	indexName    string
-	projection   string
-	useGSI       bool
-	item         ItemData
-	err          error
-	batchData    keys
-	pagination   pagination
-	filter       expression.ConditionBuilder
-	condition    expression.ConditionBuilder
-	key          map[string]types.AttributeValue // required only for GetItem/DeleteItem
-	keyCondition expression.KeyConditionBuilder
+	c                         *Client
+	indexName                 string
+	customObjectTypeAttribute string
+	projection                string
+	useGSI                    bool
+	item                      ItemData
+	err                       error
+	batchData                 keys
+	pagination                pagination
+	filter                    expression.ConditionBuilder
+	condition                 expression.ConditionBuilder
+	key                       map[string]types.AttributeValue // required only for GetItem/DeleteItem
+	keyCondition              expression.KeyConditionBuilder
 }
 
 // ItemData is an interface that represents a DynamoDB item. Each data item must implement this interface.
