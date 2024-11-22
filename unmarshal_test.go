@@ -129,14 +129,18 @@ func TestOutput_Unmarshal(t *testing.T) {
 				{
 					"id":           &types.AttributeValueMemberS{Value: "10"},
 					"other_field":  &types.AttributeValueMemberS{Value: "item without entity type"},
-					"_object_type": &types.AttributeValueMemberS{Value: "prefix#UUID"},
+					"_object_type": &types.AttributeValueMemberS{Value: "prefix"},
+				},
+				{
+					"id":           &types.AttributeValueMemberS{Value: "11"},
+					"other_field":  &types.AttributeValueMemberS{Value: "item without entity type"},
+					"_object_type": &types.AttributeValueMemberS{Value: "otherPrefix"},
 				},
 			},
 			entityTypes:               []string{"prefix"},
 			customObjectTypeAttribute: "",
-			separator:                 "#",
 			expectedData: mockDataItems{
-				{ID: "10", CustomEntityType: "", OtherField: "item without entity type", DefaultEntityType: "prefix#UUID"},
+				{ID: "10", CustomEntityType: "", OtherField: "item without entity type", DefaultEntityType: "prefix"},
 			},
 			expectedErr: "",
 		},
