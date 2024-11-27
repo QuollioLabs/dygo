@@ -79,23 +79,23 @@ func (o *output) Unmarshal(out Out, entityTypes []string) *output {
 }
 
 func (o *output) getObjectTypeAttribute() string {
-	if o.item.customObjectTypeAttribute == "" {
+	if o.item.customEntityTypeAttribute == "" {
 		return getPartitionKey(o.item)
 	}
 
-	return o.item.customObjectTypeAttribute
+	return o.item.customEntityTypeAttribute
 }
 
-// WithCustomObjectTypeAttribute is used to specify a custom attribute name that is used to filter the results.
+// WithCustomEntityTypeAttribute is used to specify a custom attribute name that is used to filter the results.
 // Example :
 //
 //	var data []dataItem
 //	err = item.BatchGetAuthorizedItem(context.Background(), 10).
-//		WithCustomObjectTypeAttribute("custom_entity_type").
+//		WithCustomEntityTypeAttribute("custom_entity_type").
 //		Unmarshal(&data, []string{"room"}). // the items with custom_entity_type = "room" will be unmarshaled
 //		Run()
-func (o *output) WithCustomObjectTypeAttribute(attr string) *output {
-	o.item.customObjectTypeAttribute = attr
+func (o *output) WithCustomEntityTypeAttribute(attr string) *output {
+	o.item.customEntityTypeAttribute = attr
 	return o
 }
 

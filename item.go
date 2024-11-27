@@ -13,7 +13,7 @@ import (
 type Item struct {
 	c                         *Client
 	indexName                 string
-	customObjectTypeAttribute string
+	customEntityTypeAttribute string
 	projection                string
 	useGSI                    bool
 	item                      ItemData

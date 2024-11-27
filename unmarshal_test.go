@@ -35,7 +35,7 @@ func TestOutput_Unmarshal(t *testing.T) {
 		results                   []map[string]types.AttributeValue
 		entityTypes               []string
 		bypassAuth                bool
-		customObjectTypeAttribute string
+		customEntityTypeAttribute string
 		expectedData              mockDataItems
 		expectedErr               string
 		separator                 string
@@ -63,7 +63,7 @@ func TestOutput_Unmarshal(t *testing.T) {
 				},
 			},
 			entityTypes:               []string{"vehicle"},
-			customObjectTypeAttribute: "custom_entity_type",
+			customEntityTypeAttribute: "custom_entity_type",
 			expectedData: mockDataItems{
 				{ID: "6", CustomEntityType: "vehicle", OtherField: "car", DefaultEntityType: "prefix#UUID"},
 				{ID: "7", CustomEntityType: "vehicle", OtherField: "bike", DefaultEntityType: "prefix#UUID"},
@@ -81,7 +81,7 @@ func TestOutput_Unmarshal(t *testing.T) {
 				},
 			},
 			entityTypes:               []string{"vehicle"},
-			customObjectTypeAttribute: "custom_entity_type",
+			customEntityTypeAttribute: "custom_entity_type",
 			expectedData:              mockDataItems{},
 			expectedErr:               "",
 		},
@@ -94,7 +94,7 @@ func TestOutput_Unmarshal(t *testing.T) {
 				},
 			},
 			entityTypes:               []string{"vehicle"},
-			customObjectTypeAttribute: "custom_entity_type",
+			customEntityTypeAttribute: "custom_entity_type",
 			expectedData:              mockDataItems{},
 			expectedErr:               "",
 		},
@@ -115,7 +115,7 @@ func TestOutput_Unmarshal(t *testing.T) {
 				},
 			},
 			entityTypes:               []string{"vehicle"},
-			customObjectTypeAttribute: "custom_entity_type",
+			customEntityTypeAttribute: "custom_entity_type",
 			expectedData: mockDataItems{
 				{ID: "11", CustomEntityType: "vehicle#UUID", OtherField: "car", DefaultEntityType: "prefix#UUID"},
 				{ID: "12", CustomEntityType: "vehicle#UUID", OtherField: "bike", DefaultEntityType: "prefix#UUID"},
@@ -138,7 +138,7 @@ func TestOutput_Unmarshal(t *testing.T) {
 				},
 			},
 			entityTypes:               []string{"prefix"},
-			customObjectTypeAttribute: "",
+			customEntityTypeAttribute: "",
 			expectedData: mockDataItems{
 				{ID: "10", CustomEntityType: "", OtherField: "item without entity type", DefaultEntityType: "prefix"},
 			},
@@ -159,7 +159,7 @@ func TestOutput_Unmarshal(t *testing.T) {
 					},
 				},
 				indexName:                 "_object_type_index",
-				customObjectTypeAttribute: "",
+				customEntityTypeAttribute: "",
 				projection:                "",
 				useGSI:                    false,
 				item:                      nil,
@@ -177,8 +177,8 @@ func TestOutput_Unmarshal(t *testing.T) {
 				ctx:     context.Background(),
 			}
 
-			if tt.customObjectTypeAttribute != "" {
-				o = o.WithCustomObjectTypeAttribute(tt.customObjectTypeAttribute)
+			if tt.customEntityTypeAttribute != "" {
+				o = o.WithCustomEntityTypeAttribute(tt.customEntityTypeAttribute)
 			}
 
 			if tt.bypassAuth {
@@ -205,8 +205,8 @@ func TestOutput_Unmarshal(t *testing.T) {
 				assert.Nil(t, err)
 				// Verify the data
 				assert.Equal(t, tt.expectedData, outData)
-				if tt.customObjectTypeAttribute != "" {
-					assert.Equal(t, tt.customObjectTypeAttribute, o.getObjectTypeAttribute())
+				if tt.customEntityTypeAttribute != "" {
+					assert.Equal(t, tt.customEntityTypeAttribute, o.getObjectTypeAttribute())
 				} else {
 					assert.Equal(t, "_object_type", o.getObjectTypeAttribute())
 				}
