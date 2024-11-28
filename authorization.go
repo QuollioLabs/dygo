@@ -56,7 +56,7 @@ func (o *output) Unmarshal(out Out, entityTypes []string) *output {
 
 	targetAttVals := []map[string]types.AttributeValue{}
 	for _, result := range o.Results {
-		switch v := result[getPartitionKey(o.item)].(type) {
+		switch v := result[o.getObjectTypeAttribute()].(type) {
 		case *types.AttributeValueMemberS:
 			key := getSplittedKey(v.Value, o.item.c.keySeparator)
 			if stringExists(entityTypes, key) {
@@ -75,6 +75,27 @@ func (o *output) Unmarshal(out Out, entityTypes []string) *output {
 			o.item.err = dynamoError().method("authorization").message(err.Error())
 		}
 	}
+	return o
+}
+
+func (o *output) getObjectTypeAttribute() string {
+	if o.item.customEntityTypeAttribute == "" {
+		return getPartitionKey(o.item)
+	}
+
+	return o.item.customEntityTypeAttribute
+}
+
+// WithCustomEntityTypeAttribute is used to specify a custom attribute name that is used to filter the results.
+// Example :
+//
+//	var data []dataItem
+//	err = item.BatchGetAuthorizedItem(context.Background(), 10).
+//		WithCustomEntityTypeAttribute("custom_entity_type").
+//		Unmarshal(&data, []string{"room"}). // the items with custom_entity_type = "room" will be unmarshaled
+//		Run()
+func (o *output) WithCustomEntityTypeAttribute(attr string) *output {
+	o.item.customEntityTypeAttribute = attr
 	return o
 }
 
