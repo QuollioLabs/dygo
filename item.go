@@ -74,6 +74,18 @@ func (c *Client) partition(key string, value any) *Item {
 	return &item
 }
 
+// initializeScanOperation initializes a new Item for a scan operation and associates it with the Client. 
+func (c *Client) initializeScanOperation() *Item {
+	item := Item{
+		c: c,
+	}
+	item.err = item.validate("TableName", c.tableName)
+	if item.err == nil {
+		item.err = item.validate("TableName", c.tableName)
+	}
+	return &item
+}
+
 // sort sets sort key value.
 func (i *Item) sort(key string, f SortKeyFunc) *Item {
 	keyCondition, sortKeyValue := f(key)

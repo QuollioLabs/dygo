@@ -260,6 +260,21 @@ func (c *Client) PK(value any) *Item {
 	return c.partition(c.partitionKey, value)
 }
 
+// InitScan initializes item for scan operation.
+// It returns an Item object that can be used to perform scan operations.
+// It is must to call this method before performing any scan operation.
+//
+// Example:
+//
+//	 err = db.
+//		InitScan().
+//		Scan(context.Background()).
+//		Unmarshal(&data, []string{"room"}).
+//		Run()
+func (c *Client) InitScan() *Item {
+	return c.initializeScanOperation()
+}
+
 // GSI sets Global Secondary Index (GSI) for quiry.
 // It takes the indexName string, partitionKeyValue any, and f SortKeyFunc as parameters.
 // The indexName specifies the name of the GSI.

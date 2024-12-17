@@ -416,6 +416,15 @@ func getLastKey(data dataSlice) map[string]any {
 	return lek
 }
 
+func getLastKeyScan(data dataSlice) map[string]any {
+	lek := map[string]any{}
+	if len(data) > 0 {
+		lek["_partition_key"] = data[len(data)-1].PK
+		lek["_sort_key"] = data[len(data)-1].SK
+	}
+	return lek
+}
+
 func getRawItem(prefix string, count int) ([]map[string]types.AttributeValue, []string) {
 	ids := make([]string, 0)
 	items := make([]map[string]types.AttributeValue, 0)

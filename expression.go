@@ -57,6 +57,29 @@ func (i *Item) getQueryExpression() (*expression.Expression, error) {
 	return &expr, nil
 }
 
+// getScanExpression returns the query expression for the Item.
+// It constructs and builds the expression using the provided projection and filter (if set).
+func (i *Item) getScanExpression() (*expression.Expression, error) {
+	builder := expression.NewBuilder()
+
+	if i.projection != "" {
+		proj, err := projection(i.projection)
+		if err != nil {
+			return nil, err
+		}
+		builder = builder.WithProjection(*proj)
+	}
+
+	if i.filter.IsSet() {
+		builder = builder.WithFilter(i.filter)
+	}
+	expr, err := builder.Build()
+	if err != nil {
+		return nil, err
+	}
+	return &expr, nil
+}
+
 // getKeyCondition returns the KeyConditionBuilder associated with the given Item.
 func getKeyCondition(i *Item) (*expression.KeyConditionBuilder, error) {
 	return &i.keyCondition, nil
