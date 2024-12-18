@@ -8,10 +8,11 @@ import (
 )
 
 type output struct {
-	Results    []map[string]types.AttributeValue
-	item       *Item
-	ctx        context.Context
-	bypassAuth bool
+	Results          []map[string]types.AttributeValue
+	LastEvaluatedKey map[string]types.AttributeValue
+	item             *Item
+	ctx              context.Context
+	bypassAuth       bool
 }
 
 func newOutput(item *Item, ctx context.Context) *output {
@@ -22,11 +23,21 @@ func newOutput(item *Item, ctx context.Context) *output {
 	}
 }
 
+// Run is used to run the operation and return an error if the operation fails.
 func (o *output) Run() error {
 	if o == nil || o.item == nil {
 		return nil
 	}
 	return o.item.err
+}
+
+// RunAndFetchLastKey is used to run the scan operation and return the last evaluated key and an error if the operation fails.
+// It works only with scan operations.
+func (o *output) RunAndFetchLastKey() (map[string]types.AttributeValue, error) {
+	if o == nil || o.item == nil {
+		return nil, nil
+	}
+	return o.LastEvaluatedKey, o.item.err
 }
 
 // Unmarshal unmarshals the DynamoDB query results into the provided 'out' object,
